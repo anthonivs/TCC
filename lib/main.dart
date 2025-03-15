@@ -1,21 +1,17 @@
-import 'package:firebase_core/firebase_core.dart'; // Importe o Firebase Core
+import 'package:firebase_core/firebase_core.dart'; 
 import 'package:flutter/material.dart';
-import 'views/login_page.dart'; // Importe sua página de login
-import 'views/leader_home_page.dart'; // Importe a tela do líder
-import 'views/volunteer_home_page.dart'; // Importe a tela do voluntário
-import 'views/registration_page.dart'; // Importe a tela de registro
-import 'firebase_options.dart'; // Importe as opções do Firebase geradas pelo flutterfire_cli
+import 'views/login_page.dart'; 
+import 'views/leader_home_page.dart'; 
+import 'views/volunteer_home_page.dart'; 
+import 'views/registration_page.dart'; 
+import 'firebase_options.dart';
 
 void main() async {
-  // Garante que o Flutter esteja inicializado antes de usar plugins
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o Firebase com as opções específicas da plataforma
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Executa o aplicativo
   runApp(MyApp());
 }
 

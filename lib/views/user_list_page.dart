@@ -25,7 +25,7 @@ class UserListPage extends StatelessWidget {
           }
 
           final users = snapshot.data ?? [];
-          print('Usuários carregados: ${users.length}'); 
+          print('Usuários carregados: ${users.length}'); // Log para depuração
 
           return ListView.builder(
             itemCount: users.length,

@@ -4,16 +4,18 @@ import '../models/event.dart';
 class EventController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Adiciona um evento
   Future<void> addEvent(Event event) async {
     await _firestore.collection('events').add(event.toMap());
   }
 
-  // Obtém todos os eventos como um Stream
-  Stream<List<Event>> getEvents() {
-    return _firestore.collection('events').snapshots().map((snapshot) {
+  Stream<List<Event>> getEvents(String groupId) {
+    return _firestore
+        .collection('events')
+        .where('groupId', isEqualTo: groupId) 
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Event.fromMap(doc.data()); // Remova o cast explícito
+        return Event.fromMap(doc.data()); 
       }).toList();
     });
   }

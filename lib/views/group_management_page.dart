@@ -7,14 +7,12 @@ import '../services/auth_service.dart';
 class GroupManagementPage extends StatefulWidget {
   final Group? group;
 
-  // Construtor corrigido com parâmetro 'key' e marcado como 'const'
   const GroupManagementPage({super.key, this.group});
 
   @override
   GroupManagementPageState createState() => GroupManagementPageState();
 }
 
-// Renomeando a classe para remover o '_' (tornando-a pública)
 class GroupManagementPageState extends State<GroupManagementPage> {
   final _formKey = GlobalKey<FormState>();
   final GroupController _groupController = GroupController();
@@ -34,40 +32,46 @@ class GroupManagementPageState extends State<GroupManagementPage> {
     }
   }
 
-void _createOrUpdateGroup() async { // Adicione async
-  if (_formKey.currentState!.validate()) {
-    _formKey.currentState!.save();
+  void _createOrUpdateGroup(List<User> users) async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
-    final currentUser = await _authService.currentUser; // Aguarda a resolução do Future
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Usuário não está logado.')),
+      final currentUser = await _authService.currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Usuário não está logado.')),
+        );
+        return;
+      }
+
+
+      final volunteerIds = users
+          .where((user) => _selectedVolunteers.contains(user.name))
+          .map((user) => user.id)
+          .toList();
+
+      final newGroup = Group(
+        id: widget.group?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _groupName,
+        leader: _selectedLeader,
+        volunteers: _selectedVolunteers,
+        userIds: [currentUser.id, ...volunteerIds], 
+        events: widget.group?.events ?? [], 
       );
-      return;
+
+      if (widget.group == null) {
+        _groupController.addGroup(newGroup);
+      } else {
+        _groupController.updateGroup(widget.group!, newGroup);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Grupo salvo com sucesso!')),
+      );
+
+      Navigator.pop(context, true);
     }
-
-    final newGroup = Group(
-      id: widget.group?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _groupName,
-      leader: _selectedLeader,
-      volunteers: _selectedVolunteers,
-      userIds: [currentUser.id], // Agora currentUser é um User, não um Future
-      events: widget.group?.events ?? [],
-    );
-
-    if (widget.group == null) {
-      _groupController.addGroup(newGroup);
-    } else {
-      _groupController.updateGroup(widget.group!, newGroup);
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Grupo salvo com sucesso!')),
-    );
-
-    Navigator.pop(context, true);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +150,7 @@ void _createOrUpdateGroup() async { // Adicione async
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: _createOrUpdateGroup,
+                    onPressed: () => _createOrUpdateGroup(users), 
                     child: Text(widget.group == null ? 'Criar Grupo' : 'Salvar Alterações'),
                   ),
                 ],

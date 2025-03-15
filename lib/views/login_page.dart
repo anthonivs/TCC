@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'home_page.dart';
-import 'registration_page.dart'; // Importe a tela de registro
+import 'registration_page.dart'; 
 import 'leader_home_page.dart'; 
 import 'volunteer_home_page.dart';
 
@@ -9,10 +9,10 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  LoginPageState createState() => LoginPageState(); // Nome da classe alterado
+  LoginPageState createState() => LoginPageState(); 
 }
 
-class LoginPageState extends State<LoginPage> { // Nome da classe alterado
+class LoginPageState extends State<LoginPage> { 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -24,13 +24,13 @@ void _login() async {
 
     try {
       final user = await AuthService().login(email, password);
-      if (!mounted) return; // Verifica se o widget ainda está montado
+      if (!mounted) return; 
       if (user != null) {
-        // Redireciona com base no papel do usuário
+
         if (user.role == 'Líder') {
-          Navigator.pushReplacementNamed(context, '/leaderHome'); // Redireciona para a tela do líder
+          Navigator.pushReplacementNamed(context, '/leaderHome');
         } else {
-          Navigator.pushReplacementNamed(context, '/volunteerHome'); // Redireciona para a tela do voluntário
+          Navigator.pushReplacementNamed(context, '/volunteerHome'); 
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +38,7 @@ void _login() async {
         );
       }
     } catch (e) {
-      if (!mounted) return; // Verifica se o widget ainda está montado
+      if (!mounted) return; 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao fazer login: $e')),
       );

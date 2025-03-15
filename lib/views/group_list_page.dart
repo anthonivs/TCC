@@ -32,7 +32,7 @@ Widget build(BuildContext context) {
         final groups = snapshot.data ?? [];
 
         return FutureBuilder<User?>(
-          future: _authService.currentUser, // Resolve o Future<User?>
+          future: _authService.currentUser, 
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return Center(child: CircularProgressIndicator());
@@ -130,7 +130,6 @@ Widget build(BuildContext context) {
                 _groupController.deleteGroup(group);
                 Navigator.pop(context);
 
-                // Verifica se o widget ainda está montado antes de usar o contexto
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Grupo excluído com sucesso!')),

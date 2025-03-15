@@ -8,14 +8,12 @@ import '../services/auth_service.dart';
 class GroupCalendarPage extends StatefulWidget {
   final Group group;
 
-  // Construtor corrigido com parâmetro 'key' e marcado como 'const'
   const GroupCalendarPage({super.key, required this.group});
 
   @override
   GroupCalendarPageState createState() => GroupCalendarPageState();
 }
 
-// Renomeando a classe para remover o '_' (tornando-a pública)
 class GroupCalendarPageState extends State<GroupCalendarPage> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
@@ -32,15 +30,15 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
     });
   }
 
-void _checkAccess() async {
-  final user = await _authService.currentUser; // Aguarda a resolução do Future
-  if (user == null || !widget.group.userIds.contains(user.id)) {
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Você não tem acesso a este grupo.')),
-    );
+  void _checkAccess() async {
+    final user = await _authService.currentUser;
+    if (user == null || !widget.group.userIds.contains(user.id)) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Você não tem acesso a este grupo.')),
+      );
+    }
   }
-}
 
   void _addEvent() {
     if (_selectedDay == null) {
@@ -93,6 +91,7 @@ void _checkAccess() async {
                     description: newEvent,
                     location: newLocation,
                     time: newTime,
+                    groupId: widget.group.id,
                   );
                   _eventController.addEvent(event);
                   Navigator.pop(context);
@@ -117,7 +116,7 @@ void _checkAccess() async {
         title: Text('Calendário do Grupo ${widget.group.name}'),
       ),
       body: StreamBuilder<List<Event>>(
-        stream: _eventController.getEvents(), // Stream de todos os eventos
+        stream: _eventController.getEvents(widget.group.id), 
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

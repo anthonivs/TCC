@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; // Importe o AuthService
+import '../services/auth_service.dart';
 import 'group_list_page.dart';
 
 class VolunteerHomePage extends StatelessWidget {
@@ -14,8 +14,8 @@ class VolunteerHomePage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
-              await AuthService().logout(); // Faz o logout
-              Navigator.pushReplacementNamed(context, '/login'); // Redireciona para a tela de login
+              await AuthService().logout(); 
+              Navigator.pushReplacementNamed(context, '/login'); 
             },
           ),
         ],
@@ -25,8 +25,8 @@ class VolunteerHomePage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start, // Alinha os botões no topo
-              crossAxisAlignment: CrossAxisAlignment.center, // Centraliza horizontalmente
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center, 
               children: [
                 ElevatedButton(
                   onPressed: () {
@@ -40,7 +40,6 @@ class VolunteerHomePage extends StatelessWidget {
                 SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    // Implementar visualização do perfil do voluntário
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Funcionalidade em desenvolvimento.')),
                     );

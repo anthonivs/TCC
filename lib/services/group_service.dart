@@ -19,7 +19,6 @@ class GroupService {
     await _firestore.collection('groups').doc(group.id).delete();
   }
 
-  // Obtém todos os grupos
   Stream<List<Group>> getGroups() {
     return _firestore.collection('groups').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();

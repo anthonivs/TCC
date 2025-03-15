@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:tccapp/models/user.dart';
 import '../services/auth_service.dart';
 import 'login_page.dart';
-import 'leader_home_page.dart'; // Importe a tela do líder
-import 'volunteer_home_page.dart'; // Importe a tela do voluntário
+import 'leader_home_page.dart'; 
+import 'volunteer_home_page.dart'; 
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -11,7 +11,7 @@ class HomePage extends StatelessWidget {
 @override
 Widget build(BuildContext context) {
   return FutureBuilder<User?>(
-    future: AuthService().currentUser, // Resolve o Future<User?>
+    future: AuthService().currentUser, 
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
         return Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -29,7 +29,6 @@ Widget build(BuildContext context) {
         return Scaffold(body: Center(child: CircularProgressIndicator()));
       }
 
-      // Redireciona para a tela correta com base no papel do usuário
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentUser.role == 'Líder') {
           Navigator.pushReplacement(

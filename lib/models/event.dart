@@ -3,12 +3,14 @@ class Event {
   final String description;
   final String location;
   final String time;
+  final String groupId;
 
   Event({
     required this.date,
     required this.description,
     required this.location,
     required this.time,
+    required this.groupId,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class Event {
       'description': description,
       'location': location,
       'time': time,
+      'groupId': groupId,
     };
   }
 
@@ -26,6 +29,7 @@ class Event {
       description: map['description'],
       location: map['location'],
       time: map['time'],
+      groupId: map['groupId'],
     );
   }
 }

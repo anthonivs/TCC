@@ -15,32 +15,32 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   String _role = 'Voluntário';
-  bool _isLoading = false; // Adicionado para controlar o estado de carregamento
+  bool _isLoading = false; 
 
 void _register() async {
   if (_formKey.currentState!.validate()) {
     setState(() {
-      _isLoading = true; // Ativa o indicador de carregamento
+      _isLoading = true;
     });
 
     final email = _emailController.text;
     final password = _passwordController.text;
     final name = _nameController.text;
 
-    // Verifica se as senhas coincidem
+
     if (password != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('As senhas não coincidem. Por favor, tente novamente.')),
       );
       setState(() {
-        _isLoading = false; // Desativa o indicador de carregamento
+        _isLoading = false;
       });
       return;
     }
 
     try {
       final user = await AuthService().register(email, password, name, _role);
-      if (!mounted) return; // Verifica se o widget ainda está montado
+      if (!mounted) return; 
       if (user != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Cadastro realizado com sucesso!')),
@@ -51,14 +51,14 @@ void _register() async {
         Navigator.pushReplacementNamed(context, '/login'); // Redireciona para a tela de login
       }
     } catch (e) {
-      if (!mounted) return; // Verifica se o widget ainda está montado
+      if (!mounted) return; 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())), // Exibe a mensagem de erro
+        SnackBar(content: Text(e.toString())), 
       );
     } finally {
       if (mounted) {
         setState(() {
-          _isLoading = false; // Desativa o indicador de carregamento
+          _isLoading = false; 
         });
       }
     }
@@ -150,7 +150,7 @@ void _register() async {
               ),
               SizedBox(height: 20),
               _isLoading
-                  ? CircularProgressIndicator() // Exibe um indicador de carregamento
+                  ? CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _register,
                       child: Text('Cadastrar'),
