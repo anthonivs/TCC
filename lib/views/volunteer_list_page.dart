@@ -37,7 +37,7 @@ class UserListPage extends StatelessWidget {
                 trailing: IconButton(
                   icon: Icon(Icons.delete, color: Colors.red),
                   onPressed: () async {
-                    final confirm = await showDialog(
+                    final _ = await showDialog(
                       context: context,
                       builder: (context) {
                         return AlertDialog(
@@ -57,12 +57,7 @@ class UserListPage extends StatelessWidget {
                       },
                     );
 
-                    if (confirm == true) {
-                      await _authService.removeUser(user); 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Usuário excluído com sucesso!')),
-                      );
-                    }
+                    
                   },
                 ),
               );

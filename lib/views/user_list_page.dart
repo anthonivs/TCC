@@ -58,10 +58,16 @@ class UserListPage extends StatelessWidget {
                     );
 
                     if (confirm == true) {
-                      await _authService.removeUser(user); 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Usuário excluído com sucesso!')),
-                      );
+                      try {
+                        await _authService.removeUser(user);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Usuário ${user.name} excluído com sucesso!')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Erro ao excluir usuário: $e')),
+                        );
+                      }
                     }
                   },
                 ),
