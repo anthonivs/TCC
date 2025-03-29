@@ -3,6 +3,7 @@ import '../models/group.dart';
 import '../models/user.dart';
 import '../controllers/group_controller.dart';
 import '../services/auth_service.dart';
+import '../utils/show_message.dart';
 
 class GroupManagementPage extends StatefulWidget {
   final Group? group;
@@ -38,12 +39,9 @@ class GroupManagementPageState extends State<GroupManagementPage> {
 
       final currentUser = await _authService.currentUser;
       if (currentUser == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Usuário não está logado.')),
-        );
+        MessageUtils.showError(context, 'Usuário não está logado.');
         return;
       }
-
 
       final volunteerIds = users
           .where((user) => _selectedVolunteers.contains(user.name))
@@ -59,17 +57,17 @@ class GroupManagementPageState extends State<GroupManagementPage> {
         events: widget.group?.events ?? [], 
       );
 
-      if (widget.group == null) {
-        _groupController.addGroup(newGroup);
-      } else {
-        _groupController.updateGroup(widget.group!, newGroup);
+      try {
+        if (widget.group == null) {
+          await _groupController.addGroup(newGroup);
+        } else {
+          await _groupController.updateGroup(widget.group!, newGroup);
+        }
+        MessageUtils.showSuccess(context, 'Grupo salvo com sucesso!');
+        Navigator.pop(context, true);
+      } catch (e) {
+        MessageUtils.showError(context, 'Erro ao salvar grupo');
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Grupo salvo com sucesso!')),
-      );
-
-      Navigator.pop(context, true);
     }
   }
 
@@ -107,9 +105,7 @@ class GroupManagementPageState extends State<GroupManagementPage> {
                       }
                       return null;
                     },
-                    onSaved: (value) {
-                      _groupName = value!;
-                    },
+                    onSaved: (value) => _groupName = value!,
                   ),
                   DropdownButtonFormField<String>(
                     decoration: InputDecoration(labelText: 'Líder do Grupo'),
@@ -121,11 +117,7 @@ class GroupManagementPageState extends State<GroupManagementPage> {
                               child: Text(leader.name),
                             ))
                         .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedLeader = value;
-                      });
-                    },
+                    onChanged: (value) => setState(() => _selectedLeader = value),
                   ),
                   SizedBox(height: 16),
                   Text('Voluntários:'),

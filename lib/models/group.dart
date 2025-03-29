@@ -1,4 +1,4 @@
-import 'package:tccapp/models/event.dart';
+import 'event.dart';
 
 class Group {
   final String id;
@@ -6,15 +6,15 @@ class Group {
   final String? leader;
   final List<String> volunteers;
   final List<String> userIds;
-  final List<Event> events; 
+  final List<Event> events;
 
   Group({
     required this.id,
     required this.name,
-    this.leader,
+    required this.leader,
     required this.volunteers,
-    this.userIds = const [],
-    this.events = const [], 
+    required this.userIds,
+    required this.events,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,22 +24,23 @@ class Group {
       'leader': leader,
       'volunteers': volunteers,
       'userIds': userIds,
-      'events': events.map((event) => event.toMap()).toList(), // Converte eventos para Map
+      'events': events.map((event) => event.toMap()).toList(),
     };
   }
 
-  // Cria um Group a partir de um Map (usado no Firestore)
   factory Group.fromMap(Map<String, dynamic> map) {
     return Group(
-      id: map['id'],
-      name: map['name'],
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
       leader: map['leader'],
       volunteers: List<String>.from(map['volunteers'] ?? []),
       userIds: List<String>.from(map['userIds'] ?? []),
-      events: (map['events'] as List<dynamic>?)
-              ?.map((event) => Event.fromMap(event))
-              .toList() ??
-          [], // Converte Map para eventos
+      events: (map['events'] is List)
+          ? List<Event>.from(
+              (map['events'] as List)
+                  .where((e) => e is Map<String, dynamic>)
+                  .map((e) => Event.fromMap(e)))
+          : [],
     );
   }
 }

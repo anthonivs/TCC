@@ -16,7 +16,8 @@ class GroupController {
     await _groupService.deleteGroup(group);
   }
 
-  Stream<List<Group>> getGroups() {
-    return _groupService.getGroups();
+  // Atualizado para receber userId e repassar para o service
+  Stream<List<Group>> getGroups(String userId) {
+    return _groupService.getGroups(userId);
   }
 }

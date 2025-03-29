@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../utils/show_message.dart';
 import 'registration_page.dart'; 
 
 class LoginPage extends StatefulWidget {
@@ -14,34 +15,30 @@ class LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-void _login() async {
-  if (_formKey.currentState!.validate()) {
-    final email = _emailController.text;
-    final password = _passwordController.text;
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      final email = _emailController.text;
+      final password = _passwordController.text;
 
-    try {
-      final user = await AuthService().login(email, password);
-      if (!mounted) return; 
-      if (user != null) {
-
-        if (user.role == 'Líder') {
-          Navigator.pushReplacementNamed(context, '/leaderHome');
+      try {
+        final user = await AuthService().login(email, password);
+        if (!mounted) return; 
+        if (user != null) {
+          MessageUtils.showSuccess(context, 'Login realizado com sucesso!');
+          if (user.role == 'Líder') {
+            Navigator.pushReplacementNamed(context, '/leaderHome');
+          } else {
+            Navigator.pushReplacementNamed(context, '/volunteerHome'); 
+          }
         } else {
-          Navigator.pushReplacementNamed(context, '/volunteerHome'); 
+          MessageUtils.showError(context, 'Credenciais inválidas. Por favor, tente novamente.');
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Credenciais inválidas. Por favor, tente novamente.')),
-        );
+      } catch (e) {
+        if (!mounted) return; 
+        MessageUtils.showError(context, 'Erro ao fazer login');
       }
-    } catch (e) {
-      if (!mounted) return; 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao fazer login: $e')),
-      );
     }
   }
-}
 
   void _navigateToRegistration() {
     Navigator.push(
@@ -93,7 +90,7 @@ void _login() async {
                 onPressed: _login,
                 child: Text('Entrar'),
               ),
-              SizedBox(height: 10), // Espaço entre os botões
+              SizedBox(height: 10),
               TextButton(
                 onPressed: _navigateToRegistration,
                 child: Text('Não tem uma conta? Cadastre-se'),

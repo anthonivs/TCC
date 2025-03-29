@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; 
-import '../models/user.dart'; 
+import '../services/auth_service.dart';
+import '../models/user.dart';
+import '../utils/show_message.dart';
 
 class UserListPage extends StatelessWidget {
-  final AuthService _authService = AuthService(); 
+  final AuthService _authService = AuthService();
 
   UserListPage({super.key});
 
@@ -11,13 +12,13 @@ class UserListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Lista de Usuários'), 
+        title: const Text('Lista de Usuários'),
       ),
       body: StreamBuilder<List<User>>(
-        stream: _authService.getUsers(), 
+        stream: _authService.getUsers(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -25,57 +26,127 @@ class UserListPage extends StatelessWidget {
           }
 
           final users = snapshot.data ?? [];
-          print('Usuários carregados: ${users.length}'); // Log para depuração
 
-          return ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return ListTile(
-                title: Text(user.name),
-                subtitle: Text('${user.email} - ${user.role}'), 
-                trailing: IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    final confirm = await showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: Text('Excluir Usuário'),
-                          content: Text('Tem certeza que deseja excluir ${user.name}?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: Text('Cancelar'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: Text('Excluir', style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                        );
-                      },
-                    );
+          return FutureBuilder<User?>(
+            future: _authService.currentUser,
+            builder: (context, currentUserSnapshot) {
+              if (currentUserSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                    if (confirm == true) {
-                      try {
-                        await _authService.removeUser(user);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Usuário ${user.name} excluído com sucesso!')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Erro ao excluir usuário: $e')),
-                        );
-                      }
-                    }
-                  },
-                ),
+              final currentUser = currentUserSnapshot.data;
+              final isLeader = currentUser?.role == 'Líder';
+
+              return ListView.builder(
+                itemCount: users.length,
+                itemBuilder: (context, index) {
+                  final user = users[index];
+                  final isCurrentUser = currentUser?.id == user.id;
+
+                  return ListTile(
+                    title: Text(user.name),
+                    subtitle: Text('${user.email} - ${user.role}'),
+                    trailing: isLeader || isCurrentUser
+                        ? IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _confirmDeleteUser(context, user, isLeader, isCurrentUser),
+                          )
+                        : null,
+                  );
+                },
               );
             },
           );
         },
       ),
     );
+  }
+
+  Future<void> _confirmDeleteUser(BuildContext context, User user, bool isLeader, bool isCurrentUser) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Exclusão'),
+        content: Text('Tem certeza que deseja excluir ${user.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      String message;
+
+      if (isCurrentUser) {
+        final password = await _showPasswordDialog(context);
+        if (password == null) return;
+
+        message = await _authService.deleteUserAccount(
+          targetUserId: user.id,
+          currentUserPassword: password,
+          isLeader: isLeader,
+        );
+      } else {
+        message = await _authService.deleteUserAccount(
+          targetUserId: user.id,
+          isLeader: isLeader,
+        );
+      }
+
+      if (!context.mounted) return;
+      MessageUtils.showSuccess(context, message);
+
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!context.mounted) return;
+      if (isCurrentUser) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+      } else {
+        Navigator.pushReplacementNamed(context, '/leaderHome');
+      }
+    } catch (e) {
+      _showErrorMessage(context, 'Erro ao excluir usuário');
+    }
+  }
+
+  Future<String?> _showPasswordDialog(BuildContext context) async {
+    final passwordController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmação de Senha'),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Digite sua senha para confirmar',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, passwordController.text),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorMessage(BuildContext context, String message) {
+    if (!context.mounted) return;
+    MessageUtils.showError(context, message);
   }
 }

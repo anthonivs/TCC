@@ -1,22 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event.dart';
+import '../services/event_service.dart';
 
 class EventController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final EventService _eventService = EventService();
 
-  Future<void> addEvent(Event event) async {
-    await _firestore.collection('events').add(event.toMap());
+  Future<void> addEvent(Event event) {
+    return _eventService.addEvent(event);
   }
 
   Stream<List<Event>> getEvents(String groupId) {
-    return _firestore
-        .collection('events')
-        .where('groupId', isEqualTo: groupId) 
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return Event.fromMap(doc.data()); 
-      }).toList();
-    });
+    return _eventService.getEvents(groupId);
+  }
+
+  Stream<List<Event>> getAllEvents() {
+    return _eventService.getAllEvents();
   }
 }

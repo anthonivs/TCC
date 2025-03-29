@@ -19,9 +19,15 @@ class GroupService {
     await _firestore.collection('groups').doc(group.id).delete();
   }
 
-  Stream<List<Group>> getGroups() {
-    return _firestore.collection('groups').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();
-    });
+  // Corrigido: Busca apenas grupos onde o usuário está incluído
+  Stream<List<Group>> getGroups(String userId) {
+    print("🔍 Buscando grupos para o usuário: $userId");
+    return _firestore
+        .collection('groups')
+        .where('userIds', arrayContains: userId)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();
+        });
   }
 }

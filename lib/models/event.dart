@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Event {
   final DateTime date;
   final String description;
@@ -15,7 +17,7 @@ class Event {
 
   Map<String, dynamic> toMap() {
     return {
-      'date': date.toIso8601String(),
+      'date': Timestamp.fromDate(date),
       'description': description,
       'location': location,
       'time': time,
@@ -24,12 +26,23 @@ class Event {
   }
 
   factory Event.fromMap(Map<String, dynamic> map) {
+    final rawDate = map['date'];
+
+    DateTime date;
+    if (rawDate is Timestamp) {
+      date = rawDate.toDate();
+    } else if (rawDate is String) {
+      date = DateTime.tryParse(rawDate) ?? DateTime.now();
+    } else {
+      throw Exception('Data inválida no evento');
+    }
+
     return Event(
-      date: DateTime.parse(map['date']),
-      description: map['description'],
-      location: map['location'],
-      time: map['time'],
-      groupId: map['groupId'],
+      date: date,
+      description: map['description'] ?? '',
+      location: map['location'] ?? '',
+      time: map['time'] ?? '',
+      groupId: map['groupId'] ?? '',
     );
   }
 }

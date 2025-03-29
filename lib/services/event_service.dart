@@ -8,15 +8,45 @@ class EventService {
     await _firestore.collection('events').add(event.toMap());
   }
 
-  Stream<List<Event>> getEventsForDay(DateTime day) {
+  Stream<List<Event>> getEvents(String groupId) {
+    print('🔍 Buscando eventos para groupId: $groupId');
+
     return _firestore
         .collection('events')
-        .where('date', isEqualTo: day.toIso8601String())
+        .where('groupId', isEqualTo: groupId)
+        .snapshots()
+        .map((snapshot) {
+      print('📥 Total de eventos encontrados: ${snapshot.docs.length}');
+
+      return snapshot.docs.map((doc) {
+        try {
+          final data = doc.data();
+          print('📄 Evento bruto: $data');
+          final event = Event.fromMap(data);
+          print('✅ Evento convertido: ${event.description}');
+          return event;
+        } catch (e) {
+          print('❌ Erro ao converter evento: $e');
+          return null;
+        }
+      }).whereType<Event>().toList();
+    });
+  }
+
+  Stream<List<Event>> getAllEvents() {
+    return _firestore
+        .collection('events')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return Event.fromMap(doc.data()); 
-      }).toList();
+        print('DEBUG EVENTO: ${doc.data()}');
+        try {
+          return Event.fromMap(doc.data());
+        } catch (e) {
+          print('Erro ao converter evento: $e');
+          return null;
+        }
+      }).whereType<Event>().toList();
     });
   }
 }

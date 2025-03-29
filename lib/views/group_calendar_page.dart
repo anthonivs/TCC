@@ -4,6 +4,7 @@ import '../models/group.dart';
 import '../models/event.dart';
 import '../controllers/event_controller.dart';
 import '../services/auth_service.dart';
+import '../utils/show_message.dart';
 
 class GroupCalendarPage extends StatefulWidget {
   final Group group;
@@ -28,23 +29,21 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAccess();
     });
+    print('📌 Abrindo calendário para o grupo: ${widget.group.id}');
   }
 
   void _checkAccess() async {
     final user = await _authService.currentUser;
     if (user == null || !widget.group.userIds.contains(user.id)) {
+      if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Você não tem acesso a este grupo.')),
-      );
+      MessageUtils.showError(context, 'Você não tem acesso a este grupo.');
     }
   }
 
   void _addEvent() {
     if (_selectedDay == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, selecione um dia no calendário.')),
-      );
+      MessageUtils.showInfo(context, 'Por favor, selecione um dia no calendário.');
       return;
     }
 
@@ -62,29 +61,23 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
             children: [
               TextField(
                 decoration: InputDecoration(hintText: 'Descrição do evento'),
-                onChanged: (value) {
-                  newEvent = value;
-                },
+                onChanged: (value) => newEvent = value,
               ),
               SizedBox(height: 16),
               TextField(
                 decoration: InputDecoration(hintText: 'Localização do evento'),
-                onChanged: (value) {
-                  newLocation = value;
-                },
+                onChanged: (value) => newLocation = value,
               ),
               SizedBox(height: 16),
               TextField(
                 decoration: InputDecoration(hintText: 'Horário do evento (ex: 14:00)'),
-                onChanged: (value) {
-                  newTime = value;
-                },
+                onChanged: (value) => newTime = value,
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 if (newEvent.isNotEmpty && newLocation.isNotEmpty && newTime.isNotEmpty) {
                   final event = Event(
                     date: _selectedDay!,
@@ -93,12 +86,17 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                     time: newTime,
                     groupId: widget.group.id,
                   );
-                  _eventController.addEvent(event);
-                  Navigator.pop(context);
+                  try {
+                    await _eventController.addEvent(event);
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                    MessageUtils.showSuccess(context, 'Evento adicionado com sucesso!');
+                  } catch (e) {
+                    if (!mounted) return;
+                    MessageUtils.showError(context, 'Erro ao adicionar evento.');
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Por favor, preencha todos os campos.')),
-                  );
+                  MessageUtils.showInfo(context, 'Por favor, preencha todos os campos.');
                 }
               },
               child: Text('Salvar'),
@@ -116,14 +114,19 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
         title: Text('Calendário do Grupo ${widget.group.name}'),
       ),
       body: StreamBuilder<List<Event>>(
-        stream: _eventController.getEvents(widget.group.id), 
+        stream: _eventController.getAllEvents(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
+            print('❌ ERRO DO SNAPSHOT: ${snapshot.error}');
             return Center(child: Text('Erro ao carregar eventos.'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('Nenhum evento cadastrado ainda.'));
           }
 
           final allEvents = snapshot.data ?? [];
@@ -142,14 +145,8 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                     _focusedDay = focusedDay;
                   });
                 },
-                onFormatChanged: (format) {
-                  setState(() {
-                    _calendarFormat = format;
-                  });
-                },
-                eventLoader: (day) {
-                  return allEvents.where((event) => isSameDay(event.date, day)).toList();
-                },
+                onFormatChanged: (format) => setState(() => _calendarFormat = format),
+                eventLoader: (day) => allEvents.where((event) => isSameDay(event.date, day)).toList(),
               ),
               const SizedBox(height: 16),
               Expanded(
