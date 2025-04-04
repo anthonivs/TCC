@@ -8,6 +8,10 @@ class EventService {
     await _firestore.collection('events').add(event.toMap());
   }
 
+  Future<void> deleteEvent(String eventId) async {
+    await _firestore.collection('events').doc(eventId).delete();
+  }
+
   Stream<List<Event>> getEvents(String groupId) {
     print('🔍 Buscando eventos para groupId: $groupId');
 
@@ -21,8 +25,7 @@ class EventService {
       return snapshot.docs.map((doc) {
         try {
           final data = doc.data();
-          print('📄 Evento bruto: $data');
-          final event = Event.fromMap(data);
+          final event = Event.fromMap(data, id: doc.id); 
           print('✅ Evento convertido: ${event.description}');
           return event;
         } catch (e) {
@@ -41,7 +44,7 @@ class EventService {
       return snapshot.docs.map((doc) {
         print('DEBUG EVENTO: ${doc.data()}');
         try {
-          return Event.fromMap(doc.data());
+          return Event.fromMap(doc.data(), id: doc.id); 
         } catch (e) {
           print('Erro ao converter evento: $e');
           return null;

@@ -14,12 +14,28 @@ class GroupService {
     await _firestore.collection('groups').doc(newGroup.id).update(newGroup.toMap());
   }
 
-  // Deleta um grupo
+  // Deleta um grupo e todos os seus eventos associados
   Future<void> deleteGroup(Group group) async {
-    await _firestore.collection('groups').doc(group.id).delete();
+    final batch = _firestore.batch();
+
+    // Referência ao grupo
+    final groupRef = _firestore.collection('groups').doc(group.id);
+    batch.delete(groupRef);
+
+    // Busca eventos associados ao grupo
+    final eventsQuery = await _firestore
+        .collection('events')
+        .where('groupId', isEqualTo: group.id)
+        .get();
+
+    for (var doc in eventsQuery.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
   }
 
-  // Corrigido: Busca apenas grupos onde o usuário está incluído
+  // Retorna grupos onde o usuário está listado
   Stream<List<Group>> getGroups(String userId) {
     print("🔍 Buscando grupos para o usuário: $userId");
     return _firestore

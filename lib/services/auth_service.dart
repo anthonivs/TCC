@@ -19,7 +19,6 @@ class AuthService {
     return user != null ? await _userFromFirebase(user) : null;
   }
 
-  /// Retorna mensagem de sucesso ou lança erro
   Future<String> deleteUserAccount({
     required String targetUserId,
     String? currentUserPassword,

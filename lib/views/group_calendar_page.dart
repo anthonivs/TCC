@@ -24,6 +24,12 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
   final EventController _eventController = EventController();
 
   @override
+  void initState() {
+    super.initState();
+    _selectedDay = _focusedDay; 
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,7 +86,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
               onPressed: () async {
                 if (newEvent.isNotEmpty && newLocation.isNotEmpty && newTime.isNotEmpty) {
                   final event = Event(
-                    date: _selectedDay!,
+                    date: DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day),
                     description: newEvent,
                     location: newLocation,
                     time: newTime,
@@ -114,7 +120,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
         title: Text('Calendário do Grupo ${widget.group.name}'),
       ),
       body: StreamBuilder<List<Event>>(
-        stream: _eventController.getAllEvents(),
+        stream: _eventController.getEvents(widget.group.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -122,11 +128,10 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
 
           if (snapshot.hasError) {
             print('❌ ERRO DO SNAPSHOT: ${snapshot.error}');
-            return Center(child: Text('Erro ao carregar eventos.'));
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Nenhum evento cadastrado ainda.'));
+            final errorMsg = snapshot.error.toString().contains('permission-denied')
+                ? 'Permissão negada. Verifique as regras do Firestore.'
+                : 'Erro ao carregar eventos.';
+            return Center(child: Text(errorMsg));
           }
 
           final allEvents = snapshot.data ?? [];
@@ -156,6 +161,19 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                       .map((event) => ListTile(
                             title: Text(event.description),
                             subtitle: Text('Local: ${event.location}\nHorário: ${event.time}'),
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                try {
+                                  await _eventController.deleteEvent(event.id!);
+                                  if (!mounted) return;
+                                  MessageUtils.showSuccess(context, 'Evento excluído com sucesso!');
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  MessageUtils.showError(context, 'Erro ao excluir evento.');
+                                }
+                              },
+                            ),
                           ))
                       .toList(),
                 ),
