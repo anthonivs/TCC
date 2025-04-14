@@ -4,6 +4,7 @@ class User {
   final String email;
   final String role;
   final List<String> groupIds;
+  final String? fcmToken; 
 
   User({
     required this.id,
@@ -11,6 +12,7 @@ class User {
     required this.email,
     required this.role,
     this.groupIds = const [],
+    this.fcmToken,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,16 +22,20 @@ class User {
       'email': email,
       'role': role,
       'groupIds': groupIds,
+      'fcmToken': fcmToken, 
     };
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'],
-      name: map['name'],
-      email: map['email'],
-      role: map['role'],
-      groupIds: List<String>.from(map['groupIds'] ?? []),
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+      role: map['role'] ?? '',
+      groupIds: (map['groupIds'] is List)
+          ? List<String>.from(map['groupIds'])
+          : [],
+      fcmToken: map['fcmToken'], 
     );
   }
 }

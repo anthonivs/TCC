@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Event {
   final String? id;
   final DateTime date;
@@ -7,6 +5,7 @@ class Event {
   final String location;
   final String time;
   final String groupId;
+  final List<String> confirmedUserIds; // ✅ novo campo
 
   Event({
     this.id,
@@ -15,6 +14,7 @@ class Event {
     required this.location,
     required this.time,
     required this.groupId,
+    this.confirmedUserIds = const [], // valor padrão
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +24,7 @@ class Event {
       'location': location,
       'time': time,
       'groupId': groupId,
+      'confirmedUserIds': confirmedUserIds, // salva no Firestore
     };
   }
 
@@ -35,6 +36,9 @@ class Event {
       location: map['location'],
       time: map['time'],
       groupId: map['groupId'],
+      confirmedUserIds: map['confirmedUserIds'] != null
+          ? List<String>.from(map['confirmedUserIds'])
+          : [],
     );
   }
 }

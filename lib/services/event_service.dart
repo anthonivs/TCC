@@ -12,6 +12,24 @@ class EventService {
     await _firestore.collection('events').doc(eventId).delete();
   }
 
+  Future<void> toggleUserAttendance(String eventId, String userId) async {
+    final eventRef = _firestore.collection('events').doc(eventId);
+    final snapshot = await eventRef.get();
+
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data()!;
+    final confirmed = List<String>.from(data['confirmedUserIds'] ?? []);
+
+    if (confirmed.contains(userId)) {
+      confirmed.remove(userId);
+    } else {
+      confirmed.add(userId);
+    }
+
+    await eventRef.update({'confirmedUserIds': confirmed});
+  }
+
   Stream<List<Event>> getEvents(String groupId) {
     print('🔍 Buscando eventos para groupId: $groupId');
 
@@ -20,16 +38,16 @@ class EventService {
         .where('groupId', isEqualTo: groupId)
         .snapshots()
         .map((snapshot) {
-      print('📥 Total de eventos encontrados: ${snapshot.docs.length}');
+      print('Total de eventos encontrados: ${snapshot.docs.length}');
 
       return snapshot.docs.map((doc) {
         try {
           final data = doc.data();
           final event = Event.fromMap(data, id: doc.id); 
-          print('✅ Evento convertido: ${event.description}');
+          print('Evento convertido: ${event.description}');
           return event;
         } catch (e) {
-          print('❌ Erro ao converter evento: $e');
+          print('Erro ao converter evento: $e');
           return null;
         }
       }).whereType<Event>().toList();

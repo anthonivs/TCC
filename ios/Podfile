@@ -1,5 +1,4 @@
-# Uncomment this line to define a global platform for your project
-platform :ios, '14.0'
+platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -27,23 +26,10 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
-#target 'Runner' do
-#  use_frameworks!
-
-#  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-#  target 'RunnerTests' do
-#    inherit! :search_paths
-#  end
-#end
 target 'Runner' do
   use_frameworks!
 
-  # Adicionar as dependências do Firebase manualmente
-  pod 'Firebase/CoreOnly', '~> 11.8.0'
-  pod 'Firebase/Auth', '~> 11.8.0'
-  pod 'Firebase/Firestore', '~> 11.8.0'
-
-  # Instala todos os pods do Flutter
+  # Instala todos os pods do Flutter e plugins automaticamente
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
   target 'RunnerTests' do

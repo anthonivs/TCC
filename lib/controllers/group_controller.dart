@@ -2,7 +2,7 @@ import '../models/group.dart';
 import '../services/group_service.dart';
 
 class GroupController {
-  final GroupService _groupService = GroupService(); 
+  final GroupService _groupService = GroupService();
 
   Future<void> addGroup(Group group) async {
     await _groupService.addGroup(group);
@@ -13,7 +13,13 @@ class GroupController {
   }
 
   Future<void> deleteGroup(Group group) async {
-    await _groupService.deleteGroup(group);
+    try {
+      await _groupService.deleteGroup(group);
+      print('✅ Grupo ${group.name} deletado com seus eventos.');
+    } catch (e) {
+      print('❌ Erro ao deletar grupo: $e');
+      rethrow;
+    }
   }
 
   Stream<List<Group>> getGroups(String userId) {

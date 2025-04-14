@@ -26,7 +26,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = _focusedDay; 
+    _selectedDay = _focusedDay;
   }
 
   @override
@@ -35,7 +35,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAccess();
     });
-    print('📌 Abrindo calendário para o grupo: ${widget.group.id}');
+    print('Abrindo calendário para o grupo: ${widget.group.id}');
   }
 
   void _checkAccess() async {
@@ -58,56 +58,77 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
       builder: (context) {
         String newEvent = '';
         String newLocation = '';
-        String newTime = '';
+        TimeOfDay? selectedTime;
 
-        return AlertDialog(
-          title: Text('Adicionar Evento'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(hintText: 'Descrição do evento'),
-                onChanged: (value) => newEvent = value,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(hintText: 'Localização do evento'),
-                onChanged: (value) => newLocation = value,
-              ),
-              SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(hintText: 'Horário do evento (ex: 14:00)'),
-                onChanged: (value) => newTime = value,
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text('Adicionar Evento'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: InputDecoration(hintText: 'Descrição do evento'),
+                  onChanged: (value) => newEvent = value,
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  decoration: InputDecoration(hintText: 'Localização do evento'),
+                  onChanged: (value) => newLocation = value,
+                ),
+                SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      setState(() {
+                        selectedTime = time;
+                      });
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      hintText: 'Horário do evento',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Text(
+                      selectedTime != null ? selectedTime!.format(context) : 'Selecione o horário',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  if (newEvent.isNotEmpty && newLocation.isNotEmpty && selectedTime != null) {
+                    final event = Event(
+                      date: DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day),
+                      description: newEvent,
+                      location: newLocation,
+                      time: selectedTime!.format(context),
+                      groupId: widget.group.id,
+                    );
+                    try {
+                      await _eventController.addEvent(event);
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      MessageUtils.showSuccess(context, 'Evento adicionado com sucesso!');
+                    } catch (e) {
+                      if (!mounted) return;
+                      MessageUtils.showError(context, 'Erro ao adicionar evento.');
+                    }
+                  } else {
+                    MessageUtils.showInfo(context, 'Por favor, preencha todos os campos.');
+                  }
+                },
+                child: Text('Salvar'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                if (newEvent.isNotEmpty && newLocation.isNotEmpty && newTime.isNotEmpty) {
-                  final event = Event(
-                    date: DateTime(_selectedDay!.year, _selectedDay!.month, _selectedDay!.day),
-                    description: newEvent,
-                    location: newLocation,
-                    time: newTime,
-                    groupId: widget.group.id,
-                  );
-                  try {
-                    await _eventController.addEvent(event);
-                    if (!mounted) return;
-                    Navigator.pop(context);
-                    MessageUtils.showSuccess(context, 'Evento adicionado com sucesso!');
-                  } catch (e) {
-                    if (!mounted) return;
-                    MessageUtils.showError(context, 'Erro ao adicionar evento.');
-                  }
-                } else {
-                  MessageUtils.showInfo(context, 'Por favor, preencha todos os campos.');
-                }
-              },
-              child: Text('Salvar'),
-            ),
-          ],
         );
       },
     );
@@ -127,7 +148,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
           }
 
           if (snapshot.hasError) {
-            print('❌ ERRO DO SNAPSHOT: ${snapshot.error}');
+            print('ERRO DO SNAPSHOT: ${snapshot.error}');
             final errorMsg = snapshot.error.toString().contains('permission-denied')
                 ? 'Permissão negada. Verifique as regras do Firestore.'
                 : 'Erro ao carregar eventos.';

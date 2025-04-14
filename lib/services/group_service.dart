@@ -18,21 +18,31 @@ class GroupService {
   Future<void> deleteGroup(Group group) async {
     final batch = _firestore.batch();
 
-    // Referência ao grupo
-    final groupRef = _firestore.collection('groups').doc(group.id);
-    batch.delete(groupRef);
+    try {
+      // Referência ao grupo
+      final groupRef = _firestore.collection('groups').doc(group.id);
 
-    // Busca eventos associados ao grupo
-    final eventsQuery = await _firestore
-        .collection('events')
-        .where('groupId', isEqualTo: group.id)
-        .get();
+      // Busca eventos associados ao grupo
+      final eventsQuery = await _firestore
+          .collection('events')
+          .where('groupId', isEqualTo: group.id)
+          .get();
 
-    for (var doc in eventsQuery.docs) {
-      batch.delete(doc.reference);
+      // Adiciona exclusão de cada evento no batch
+      for (var doc in eventsQuery.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Deleta o grupo
+      batch.delete(groupRef);
+
+      // Executa o batch
+      await batch.commit();
+      print('✅ Grupo e eventos excluídos com sucesso.');
+    } catch (e) {
+      print('❌ Erro ao deletar grupo e eventos: $e');
+      rethrow;
     }
-
-    await batch.commit();
   }
 
   // Retorna grupos onde o usuário está listado

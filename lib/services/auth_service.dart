@@ -85,7 +85,42 @@ class AuthService {
 
   Future<void> logout() async => _auth.signOut();
 
-  Stream<List<User>> getUsers() => _firestore.collection('users').snapshots().map(
-        (snap) => snap.docs.map((doc) => User.fromMap(doc.data())).toList(),
-      );
+  Stream<List<User>> getUsers() {
+    return _firestore.collection('users').snapshots().map(
+      (snap) {
+        try {
+          return snap.docs.map((doc) => User.fromMap(doc.data())).toList();
+        } catch (e) {
+          print('❌ Erro ao processar usuários do snapshot: $e');
+          return [];
+        }
+      },
+    );
+  }
+
+  Future<List<User>> getAllVolunteers() async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'Voluntário')
+          .get();
+
+      return snapshot.docs
+          .map((doc) => User.fromMap(doc.data()))
+          .toList();
+    } catch (e) {
+      print('❌ Erro ao buscar voluntários: $e');
+      return [];
+    }
+  }
+
+  Future<List<User>> getAllUsers() async {
+    try {
+      final snapshot = await _firestore.collection('users').get();
+      return snapshot.docs.map((doc) => User.fromMap(doc.data())).toList();
+    } catch (e) {
+      print('❌ Erro ao buscar todos os usuários: $e');
+      return [];
+    }
+  }
 }

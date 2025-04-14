@@ -35,3 +35,39 @@ export const adminDeleteUser = https.onCall(
     }
   }
 );
+
+/**
+ * Callable function — envia notificação para múltiplos tokens via FCM HTTP v1
+ */
+export const sendGroupNotification = https.onCall(
+  {region: "us-central1"},
+  async (request) => {
+    const {tokens, title, body} = request.data as {
+      tokens: string[],
+      title: string,
+      body: string
+    };
+
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+      throw new https.HttpsError("invalid-argument", "Lista de tokens inválida ou vazia.");
+    }
+
+    const message = {
+      notification: {title, body},
+      tokens,
+    };
+
+    try {
+      const response = await admin.messaging().sendMulticast(message);
+      console.log("Notificações enviadas:", response.successCount);
+      return {
+        success: true,
+        sent: response.successCount,
+        failed: response.failureCount,
+      };
+    } catch (error: any) {
+      console.error("Erro ao enviar notificações:", error.message);
+      throw new https.HttpsError("internal", "Erro ao enviar notificações.");
+    }
+  }
+);
