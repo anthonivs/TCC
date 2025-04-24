@@ -1,6 +1,10 @@
 import * as admin from "firebase-admin";
 // eslint-disable-next-line import/no-unresolved
 import {https} from "firebase-functions/v2";
+// eslint-disable-next-line import/no-unresolved
+import {onSchedule} from "firebase-functions/v2/scheduler";
+// eslint-disable-next-line import/no-unresolved
+import {logger} from "firebase-functions";
 
 admin.initializeApp();
 
@@ -58,7 +62,7 @@ export const sendGroupNotification = https.onCall(
     };
 
     try {
-      const response = await admin.messaging().sendMulticast(message);
+      const response = await admin.messaging().sendEachForMulticast(message);
       console.log("Notificações enviadas:", response.successCount);
       return {
         success: true,
@@ -68,6 +72,61 @@ export const sendGroupNotification = https.onCall(
     } catch (error: any) {
       console.error("Erro ao enviar notificações:", error.message);
       throw new https.HttpsError("internal", "Erro ao enviar notificações.");
+    }
+  }
+);
+
+/**
+ * ⏰ Função agendada — Envia lembretes para eventos em 1 dia ou 3 horas
+ */
+export const checkUpcomingEvents = onSchedule(
+  {schedule: "every 60 minutes", timeZone: "America/Sao_Paulo"},
+  async () => {
+    const now = new Date();
+    const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+
+    const eventsSnap = await admin.firestore().collection("events").get();
+    const usersSnap = await admin.firestore().collection("users").get();
+
+    for (const doc of eventsSnap.docs) {
+      const event = doc.data();
+      const eventTime = event.date.toDate?.() || event.date;
+      const confirmedUserIds: string[] = event.confirmedUserIds ?? [];
+
+      let title = "";
+      let shouldNotify = false;
+
+      const diffMs = (target: Date) => Math.abs(eventTime.getTime() - target.getTime());
+
+      if (diffMs(oneDayLater) <= 15 * 60 * 1000) {
+        title = "📅 Lembrete: Evento em 1 dia";
+        shouldNotify = true;
+      } else if (diffMs(threeHoursLater) <= 15 * 60 * 1000) {
+        title = "⏰ Faltam 3 horas para o evento!";
+        shouldNotify = true;
+      }
+
+      if (shouldNotify && confirmedUserIds.length > 0) {
+        const tokens: string[] = [];
+
+        for (const userId of confirmedUserIds) {
+          const user = usersSnap.docs.find((u) => u.id === userId)?.data();
+          if (user?.fcmToken) tokens.push(user.fcmToken);
+        }
+
+        if (tokens.length > 0) {
+          await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: {
+              title,
+              body: `Evento: ${event.description} às ${event.time} em ${event.location}`,
+            },
+          });
+
+          logger.info(`🔔 Lembrete enviado para '${event.description}' (${title})`);
+        }
+      }
     }
   }
 );

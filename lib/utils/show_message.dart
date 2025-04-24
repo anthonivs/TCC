@@ -14,13 +14,17 @@ class MessageUtils {
   }
 
   static void _showMessage(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Não foi possível exibir a mensagem: "$message" — $e');
+    }
   }
 }
