@@ -35,7 +35,8 @@ class UserListPage extends StatelessWidget {
               }
 
               final currentUser = currentUserSnapshot.data;
-              final isLeader = currentUser?.role == 'Líder';
+              final role = currentUser?.role;
+              final canDelete = role == 'Líder' || role == 'Master';
 
               return ListView.builder(
                 itemCount: users.length,
@@ -46,10 +47,15 @@ class UserListPage extends StatelessWidget {
                   return ListTile(
                     title: Text(user.name),
                     subtitle: Text('${user.email} - ${user.role}'),
-                    trailing: isLeader || isCurrentUser
+                    trailing: (canDelete || isCurrentUser)
                         ? IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _confirmDeleteUser(context, user, isLeader, isCurrentUser),
+                            onPressed: () => _confirmDeleteUser(
+                              context,
+                              user,
+                              canDelete,
+                              isCurrentUser,
+                            ),
                           )
                         : null,
                   );
@@ -62,7 +68,12 @@ class UserListPage extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDeleteUser(BuildContext context, User user, bool isLeader, bool isCurrentUser) async {
+  Future<void> _confirmDeleteUser(
+    BuildContext context,
+    User user,
+    bool canDelete,
+    bool isCurrentUser,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -93,12 +104,12 @@ class UserListPage extends StatelessWidget {
         message = await _authService.deleteUserAccount(
           targetUserId: user.id,
           currentUserPassword: password,
-          isLeader: isLeader,
+          isLeader: canDelete,
         );
       } else {
         message = await _authService.deleteUserAccount(
           targetUserId: user.id,
-          isLeader: isLeader,
+          isLeader: canDelete,
         );
       }
 
@@ -114,7 +125,7 @@ class UserListPage extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/leaderHome');
       }
     } catch (e) {
-      _showErrorMessage(context, 'Erro ao excluir usuário');
+      _showErrorMessage(context, e.toString());
     }
   }
 

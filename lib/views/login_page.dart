@@ -1,99 +1,97 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../utils/show_message.dart';
-import 'registration_page.dart'; 
+import 'registration_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  LoginPageState createState() => LoginPageState(); 
+  LoginPageState createState() => LoginPageState();
 }
 
-class LoginPageState extends State<LoginPage> { 
+class LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _emailController    = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      final email = _emailController.text;
-      final password = _passwordController.text;
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final user = await AuthService().login(email, password);
-        if (!mounted) return; 
-        if (user != null) {
-          MessageUtils.showSuccess(context, 'Login realizado com sucesso!');
-          if (user.role == 'Líder') {
-            Navigator.pushReplacementNamed(context, '/leaderHome');
-          } else {
-            Navigator.pushReplacementNamed(context, '/volunteerHome'); 
-          }
-        } else {
-          MessageUtils.showError(context, 'Credenciais inválidas. Por favor, tente novamente.');
-        }
-      } catch (e) {
-        if (!mounted) return; 
-        MessageUtils.showError(context, 'Erro ao fazer login');
+    final email    = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    try {
+      final user = await AuthService().login(email, password);
+
+      // debug: veja no console qual role chegou
+      debugPrint('📋 [LoginPage] user.role = ${user?.role}');
+
+      if (!mounted) return;
+      if (user != null) {
+        // limpa toda a stack e retorna ao AuthGate ("/"),
+        // que vai exibir a home correta conforme user.role
+        Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+      } else {
+        MessageUtils.showError(context, 'Credenciais inválidas.');
       }
+    } catch (e) {
+      if (!mounted) return;
+      MessageUtils.showError(context, 'Erro ao fazer login: $e');
     }
   }
 
   void _navigateToRegistration() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => RegistrationPage()),
+      MaterialPageRoute(builder: (_) => const RegistrationPage()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira o email';
-                  }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Por favor, insira o email';
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
                     return 'Por favor, insira um email válido';
                   }
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Senha'),
+                decoration: const InputDecoration(labelText: 'Senha'),
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira a senha';
-                  }
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Por favor, insira a senha';
                   return null;
                 },
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _login,
-                child: Text('Entrar'),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _login,
+                  child: const Text('Entrar'),
+                ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 12),
               TextButton(
                 onPressed: _navigateToRegistration,
-                child: Text('Não tem uma conta? Cadastre-se'),
+                child: const Text('Não tem uma conta? Cadastre-se'),
               ),
             ],
           ),

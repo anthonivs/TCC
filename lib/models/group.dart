@@ -13,7 +13,7 @@ class Group {
     required this.leader,
     required this.leaderId, // <== ADICIONE ESTE CAMPO
     required this.userIds,
-    required this.volunteers,
+    required this.volunteers, required events,
   });
 
   factory Group.fromMap(Map<String, dynamic> map) {
@@ -23,9 +23,11 @@ class Group {
       leader: map['leader'],
       leaderId: map['leaderId'], // <== ADICIONE ESTE CAMPO
       userIds: List<String>.from(map['userIds']),
-      volunteers: List<String>.from(map['volunteers']),
+      volunteers: List<String>.from(map['volunteers']), events: null,
     );
   }
+
+  get events => null;
 
   Map<String, dynamic> toMap() {
     return {

@@ -25,4 +25,8 @@ class GroupController {
   Stream<List<Group>> getGroups(String userId) {
     return _groupService.getGroups(userId);
   }
+ Stream<List<Group>> getAllGroups() {
+    return _groupService.getAllGroups();
+  }
+  
 }

@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Funções de papel ---------------------------------------
+    function isLeader() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+            .data.role == 'Líder';
+    }
+    function isMaster() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+            .data.role == 'Master';
+    }
+    function isPrivileged() {
+      return isLeader() || isMaster();
+    }
+
+    // --- Usuários ------------------------------------------------
+    match /users/{userId} {
+      // leitura: dono do perfil ou admins
+      allow get, list: if request.auth != null
+        && (request.auth.uid == userId || isPrivileged());
+
+      // criação:
+      // • voluntário só cria o próprio perfil com role == 'Voluntário'
+      // • master cria com role == 'Voluntário' OU 'Líder'
+      allow create: if request.auth != null
+        && (
+             (request.auth.uid == userId
+               && request.resource.data.role == 'Voluntário'
+             )
+          || (isMaster()
+               && request.resource.data.role in ['Voluntário', 'Líder']
+             )
+           );
+
+      // atualização:
+      // • usuário só altera seu próprio perfil (não pode mudar o role)
+      // • líder só atualiza voluntários
+      // • master atualiza qualquer um
+      allow update: if request.auth != null
+        && (
+             (request.auth.uid == userId
+               && request.resource.data.role == resource.data.role
+             )
+          || (isLeader() && resource.data.role == 'Voluntário')
+          || isMaster()
+           );
+
+      // exclusão:
+      // • master exclui qualquer perfil
+      // • líder exclui apenas voluntários
+      allow delete: if request.auth != null
+        && (
+             isMaster()
+          || (isLeader() && resource.data.role == 'Voluntário')
+           );
+    }
+
+    // --- Grupos --------------------------------------------------
+    match /groups/{groupId} {
+      // listagem pública (dropdown) e get restrito a membros/admins
+      allow list: if true;
+      allow get: if request.auth != null
+        && (
+             request.auth.uid in resource.data.userIds
+          || isPrivileged()
+           );
+
+      // criação só para líderes/master
+      allow create: if request.auth != null && isPrivileged();
+
+      // update & delete:
+      // • master pode em qualquer grupo
+      // • líder só nos grupos dos quais ele já faz parte
+      allow update, delete: if request.auth != null
+        && (
+             isMaster()
+          || (isLeader() && request.auth.uid in resource.data.userIds)
+           );
+
+      // voluntário só pode auto-incluir uma única vez em userIds
+      allow update: if request.auth != null
+        && !isPrivileged()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userIds'])
+        && request.resource.data.userIds.hasAll(resource.data.userIds)
+        && request.resource.data.userIds.size() == resource.data.userIds.size() + 1
+        && request.auth.uid in request.resource.data.userIds;
+    }
+
+    // --- Eventos -------------------------------------------------
+    match /events/{eventId} {
+      allow get, list: if request.auth != null;
+
+      // criação só por admins de um grupo ao qual pertencem
+      allow create: if request.auth != null
+        && request.resource.data.groupId is string
+        && isPrivileged()
+        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId))
+             .data.userIds
+             .hasAny([request.auth.uid]);
+
+      // update/delete inteiro só por admins do grupo
+      allow update, delete: if request.auth != null
+        && isPrivileged()
+        && get(/databases/$(database)/documents/groups/$(resource.data.groupId))
+             .data.userIds
+             .hasAny([request.auth.uid]);
+
+      // confirmação de presença (campo confirmedUserIds) por qualquer membro/admin
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmedUserIds'])
+        && get(/databases/$(database)/documents/groups/$(resource.data.groupId))
+             .data.userIds
+             .hasAny([request.auth.uid]);
+    }
+
+  }
+}

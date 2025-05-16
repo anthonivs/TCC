@@ -56,4 +56,13 @@ class GroupService {
           return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();
         });
   }
+
+  Stream<List<Group>> getAllGroups() {
+  return _firestore
+      .collection('groups')
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((doc) => Group.fromMap({...doc.data(), 'id': doc.id}))
+          .toList());
+}
 }

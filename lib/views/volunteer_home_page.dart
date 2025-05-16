@@ -37,15 +37,8 @@ class VolunteerHomePage extends StatelessWidget {
                   },
                   child: Text('Calendário de Atividades'),
                 ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Funcionalidade em desenvolvimento.')),
-                    );
-                  },
-                  child: Text('Meu Perfil'),
-                ),
+                 const SizedBox(height: 16),
+              // Botão para acessar o perfil
               ],
             ),
           ),

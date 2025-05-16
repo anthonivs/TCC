@@ -4,38 +4,42 @@ class User {
   final String email;
   final String role;
   final List<String> groupIds;
-  final String? fcmToken; 
+  final String? phone;
+  final String? occupation;
+  final String? description;
 
   User({
     required this.id,
     required this.name,
     required this.email,
     required this.role,
-    this.groupIds = const [],
-    this.fcmToken,
+    required this.groupIds,
+    this.phone,
+    this.occupation,
+    this.description,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'role': role,
-      'groupIds': groupIds,
-      'fcmToken': fcmToken, 
-    };
-  }
+  factory User.fromMap(Map<String, dynamic> data) => User(
+        id: data['id'] as String,
+        name: data['name'] as String,
+        email: data['email'] as String,
+        role: data['role'] as String,
+        groupIds: List<String>.from(data['groupIds'] ?? []),
+        phone: data['phone'] as String?,
+        occupation: data['occupation'] as String?,
+        description: data['description'] as String?,
+      );
 
-  factory User.fromMap(Map<String, dynamic> map) {
-    return User(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      email: map['email'] ?? '',
-      role: map['role'] ?? '',
-      groupIds: (map['groupIds'] is List)
-          ? List<String>.from(map['groupIds'])
-          : [],
-      fcmToken: map['fcmToken'], 
-    );
-  }
+  Future<void>? get fcmToken => null;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'email': email,
+        'role': role,
+        'groupIds': groupIds,
+        'phone': phone,
+        'occupation': occupation,
+        'description': description,
+      };
 }

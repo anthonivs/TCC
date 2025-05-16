@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart'; 
-import 'group_management_page.dart';
 import 'user_list_page.dart'; 
 import 'group_list_page.dart';
 
@@ -16,58 +15,49 @@ class LeaderHomePage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
-              await AuthService().logout(); 
+              await AuthService().logout();
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start, 
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/registration'); 
-                  },
-                  child: Text('Cadastrar Voluntário/Líder'),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => GroupManagementPage()),
-                    );
-                  },
-                  child: Text('Gerenciar Grupos'),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => UserListPage()), 
-                    );
-                  },
-                  child: Text('Visualizar Usuários'), 
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => GroupListPage()),
-                    );
-                  },
-                  child: Text('Calendário de Atividades'),
-                ),
-              ],
-            ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/registration');
+                },
+                child: Text('Cadastrar Voluntário'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => UserListPage()),
+                  );
+                },
+                child: Text('Visualizar Usuários'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => GroupListPage()),
+                  );
+                },
+                child: Text('Meus Grupos'),
+              ),
+              const SizedBox(height: 16),
+              // Botão para acessar o perfil
+
+            ],
+            
           ),
         ),
       ),
