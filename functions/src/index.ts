@@ -129,4 +129,69 @@ export const checkUpcomingEvents = onSchedule(
       }
     }
   }
+
 );
+
+export const adminCreateUser = https.onCall(
+  {region: "us-central1"},
+  async (request) => {
+    const auth = request.auth;
+    if (!auth) {
+      throw new https.HttpsError("unauthenticated", "Usuário não autenticado.");
+    }
+
+    // verifica papel de quem chamou
+    const requesterUid = auth.uid;
+    const requesterSnap = await admin
+      .firestore()
+      .collection("users")
+      .doc(requesterUid)
+      .get();
+
+    const roleRequester = requesterSnap.data()?.role;
+    if (roleRequester !== "Líder" && roleRequester !== "Master") {
+      throw new https.HttpsError("permission-denied", "Sem permissão para criar usuários.");
+    }
+
+    // dados do novo usuário esperados no request.data
+    const {email, password, displayName, role} = request.data as {
+      email: string;
+      password: string;
+      displayName?: string;
+      role: "Voluntário" | "Líder" | "Master";
+    };
+
+    if (!email || !password || !role) {
+      throw new https.HttpsError("invalid-argument", "E-mail, senha e papel são obrigatórios.");
+    }
+
+    try {
+      // cria o usuário no Auth
+      const userRecord = await admin.auth().createUser({
+        email,
+        password,
+        displayName: displayName || "",
+      });
+
+      // define custom claim para controle de segurança
+      await admin.auth().setCustomUserClaims(userRecord.uid, {role});
+
+      // cria documento no Firestore
+      await admin
+        .firestore()
+        .collection("users")
+        .doc(userRecord.uid)
+        .set({
+          email,
+          displayName: displayName || "",
+          role,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+      return {uid: userRecord.uid};
+    } catch (error: any) {
+      throw new https.HttpsError("unknown", error.message);
+    }
+  }
+);
+

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:tccapp/models/user.dart';
 import '../models/group.dart';
@@ -47,9 +49,10 @@ class _GroupListPageState extends State<GroupListPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Lista de Grupos')),
       body: StreamBuilder<List<Group>>(
-        stream: isMaster
-            ? _groupController.getAllGroups()
-            : _groupController.getGroups(currentUser!.id),
+        stream:
+            isMaster
+                ? _groupController.getAllGroups()
+                : _groupController.getGroups(currentUser!.id),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -71,34 +74,36 @@ class _GroupListPageState extends State<GroupListPage> {
               final g = groups[i];
               // líder só deve editar/excluir se for líder DESSE grupo,
               // mas Master sempre pode tudo
-              final canManage = isMaster || (isLeader && g.leader == currentUser!.id);
+              final canManage =
+                  isMaster || (isLeader && g.leader == currentUser!.id);
 
               return GroupCard(
                 name: g.name,
                 leader: g.leader,
                 volunteersCount: g.volunteers.length,
-                onCalendar: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GroupCalendarPage(group: g),
-                  ),
-                ),
+                onCalendar:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GroupCalendarPage(group: g),
+                      ),
+                    ),
                 // liberar edição para Master ou Líder daquele grupo
-                onEdit: canManage
-                    ? () async {
-                        final updated = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GroupManagementPage(group: g),
-                          ),
-                        );
-                        if (updated == true && mounted) setState(() {});
-                      }
-                    : null,
+                onEdit:
+                    canManage
+                        ? () async {
+                          final updated = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GroupManagementPage(group: g),
+                            ),
+                          );
+                          if (updated == true && mounted) setState(() {});
+                        }
+                        : null,
                 // liberar exclusão para Master ou Líder daquele grupo
-                onDelete: canManage
-                    ? () => _confirmDeleteGroup(context, g)
-                    : null,
+                onDelete:
+                    canManage ? () => _confirmDeleteGroup(context, g) : null,
               );
             },
           );
@@ -110,33 +115,37 @@ class _GroupListPageState extends State<GroupListPage> {
   void _confirmDeleteGroup(BuildContext context, Group group) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Excluir Grupo'),
-        content: Text('Tem certeza que deseja excluir "${group.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Excluir Grupo'),
+            content: Text('Tem certeza que deseja excluir "${group.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await _groupController.deleteGroup(group);
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                    MessageUtils.showSuccess(context, 'Grupo excluído!');
+                    setState(() {});
+                  } catch (e) {
+                    MessageUtils.showError(
+                      context,
+                      'Erro ao excluir grupo:\n$e',
+                    );
+                  }
+                },
+                child: const Text(
+                  'Excluir',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await _groupController.deleteGroup(group);
-                if (!mounted) return;
-                Navigator.pop(context);
-                MessageUtils.showSuccess(context, 'Grupo excluído!');
-                setState(() {});
-              } catch (e) {
-                MessageUtils.showError(
-                  context,
-                  'Erro ao excluir grupo:\n$e',
-                );
-              }
-            },
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 }

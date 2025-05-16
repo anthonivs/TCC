@@ -1,6 +1,8 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart'; 
-import 'user_list_page.dart'; 
+import '../services/auth_service.dart';
+import 'user_list_page.dart';
 import 'group_list_page.dart';
 
 class LeaderHomePage extends StatelessWidget {
@@ -54,10 +56,9 @@ class LeaderHomePage extends StatelessWidget {
                 child: Text('Meus Grupos'),
               ),
               const SizedBox(height: 16),
-              // Botão para acessar o perfil
 
+              // Botão para acessar o perfil
             ],
-            
           ),
         ),
       ),

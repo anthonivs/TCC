@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'group_list_page.dart';
@@ -14,8 +16,8 @@ class VolunteerHomePage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
-              await AuthService().logout(); 
-              Navigator.pushReplacementNamed(context, '/login'); 
+              await AuthService().logout();
+              Navigator.pushReplacementNamed(context, '/login');
             },
           ),
         ],
@@ -26,7 +28,7 @@ class VolunteerHomePage extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center, 
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 ElevatedButton(
                   onPressed: () {
@@ -37,8 +39,8 @@ class VolunteerHomePage extends StatelessWidget {
                   },
                   child: Text('Calendário de Atividades'),
                 ),
-                 const SizedBox(height: 16),
-              // Botão para acessar o perfil
+                const SizedBox(height: 16),
+                // Botão para acessar o perfil
               ],
             ),
           ),
