@@ -137,17 +137,6 @@ class AuthService {
         'role': role,
       });
       newUserId = res.data['uid'] as String;
-      // Cria o campo id no documento (opcional, se você usar `id` no map)
-      await _firestore.collection('users').doc(newUserId).update({
-        'id': newUserId,
-      });
-    } else {
-      // Auto-registro de Voluntário (sem estar logado)
-      final uc = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      newUserId = uc.user!.uid;
 
       // Grava perfil no Firestore
       await _firestore.collection('users').doc(newUserId).set({
