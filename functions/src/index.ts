@@ -9,27 +9,57 @@ import {logger} from "firebase-functions";
 admin.initializeApp();
 
 /**
- * Callable function (Firebase Functions v2) — Leader-only delete user
+ * Callable function — delete user: Master remove qualquer um; Líder só Voluntário
  */
 export const adminDeleteUser = https.onCall(
   {region: "us-central1"},
   async (request) => {
+    // 1️⃣ Checa autenticação
     const auth = request.auth;
     if (!auth) {
       throw new https.HttpsError("unauthenticated", "Usuário não autenticado.");
     }
 
+    // 2️⃣ Quem solicitou
     const requesterUid = auth.uid;
-    const requesterSnap = await admin.firestore().collection("users").doc(requesterUid).get();
-    if (!requesterSnap.exists || requesterSnap.data()?.role !== "Líder") {
-      throw new https.HttpsError("permission-denied", "Apenas líderes podem excluir usuários.");
+    const requesterSnap = await admin
+      .firestore()
+      .collection("users")
+      .doc(requesterUid)
+      .get();
+    if (!requesterSnap.exists) {
+      throw new https.HttpsError("permission-denied", "Perfil do solicitante não encontrado.");
     }
+    const requesterRole = requesterSnap.data()!.role as string;
 
+    // 3️⃣ ID do alvo
     const targetUid = (request.data as { userId?: string }).userId;
     if (!targetUid) {
       throw new https.HttpsError("invalid-argument", "ID do usuário não informado.");
     }
 
+    // 4️⃣ Papel do alvo
+    const targetSnap = await admin
+      .firestore()
+      .collection("users")
+      .doc(targetUid)
+      .get();
+    if (!targetSnap.exists) {
+      throw new https.HttpsError("not-found", "Usuário alvo não encontrado.");
+    }
+    const targetRole = targetSnap.data()!.role as string;
+
+    // 5️⃣ Regras: Master pode tudo; Líder só voluntário
+    const isMaster = requesterRole === "Master";
+    const isLeaderDeletingVolunteer = requesterRole === "Líder" && targetRole === "Voluntário";
+    if (!(isMaster || isLeaderDeletingVolunteer)) {
+      throw new https.HttpsError(
+        "permission-denied",
+        "Você não tem permissão para excluir este usuário."
+      );
+    }
+
+    // 6️⃣ Executa exclusão
     try {
       await admin.auth().deleteUser(targetUid);
       await admin.firestore().collection("users").doc(targetUid).delete();
@@ -40,6 +70,7 @@ export const adminDeleteUser = https.onCall(
   }
 );
 
+
 /**
  * Callable function — envia notificação para múltiplos tokens via FCM HTTP v1
  */
@@ -47,9 +78,9 @@ export const sendGroupNotification = https.onCall(
   {region: "us-central1"},
   async (request) => {
     const {tokens, title, body} = request.data as {
-      tokens: string[],
-      title: string,
-      body: string
+      tokens: string[];
+      title: string;
+      body: string;
     };
 
     if (!Array.isArray(tokens) || tokens.length === 0) {
@@ -96,7 +127,6 @@ export const checkUpcomingEvents = onSchedule(
 
       let title = "";
       let shouldNotify = false;
-
       const diffMs = (target: Date) => Math.abs(eventTime.getTime() - target.getTime());
 
       if (diffMs(oneDayLater) <= 15 * 60 * 1000) {
@@ -123,13 +153,11 @@ export const checkUpcomingEvents = onSchedule(
               body: `Evento: ${event.description} às ${event.time} em ${event.location}`,
             },
           });
-
           logger.info(`🔔 Lembrete enviado para '${event.description}' (${title})`);
         }
       }
     }
   }
-
 );
 
 export const adminCreateUser = https.onCall(
@@ -194,4 +222,3 @@ export const adminCreateUser = https.onCall(
     }
   }
 );
-
