@@ -75,7 +75,8 @@ class _GroupListPageState extends State<GroupListPage> {
               // líder só deve editar/excluir se for líder DESSE grupo,
               // mas Master sempre pode tudo
               final canManage =
-                  isMaster || (isLeader && g.leader == currentUser!.id);
+                  isMaster || (isLeader && g.leaderId == currentUser!.id);
+              //isMaster || (isLeader && g.leader == currentUser!.id);
 
               return GroupCard(
                 name: g.name,

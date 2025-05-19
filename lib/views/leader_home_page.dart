@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'registration_page.dart';
 import 'user_list_page.dart';
 import 'group_list_page.dart';
 
@@ -12,10 +13,10 @@ class LeaderHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Página do Líder'),
+        title: const Text('Página do Líder'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () async {
               await AuthService().logout();
               Navigator.pushReplacementNamed(context, '/login');
@@ -23,45 +24,58 @@ class LeaderHomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/registration');
-                },
-                child: Text('Cadastrar Voluntário'),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
+      drawer: Drawer(
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  'Menu',
+                  style: Theme.of(
                     context,
-                    MaterialPageRoute(builder: (_) => UserListPage()),
-                  );
-                },
-                child: Text('Visualizar Usuários'),
+                  ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                ),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => GroupListPage()),
-                  );
-                },
-                child: Text('Meus Grupos'),
-              ),
-              const SizedBox(height: 16),
-
-              // Botão para acessar o perfil
-            ],
-          ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Cadastrar Voluntário'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegistrationPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Visualizar Usuários'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UserListPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.group),
+              title: const Text('Meus Grupos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GroupListPage()),
+                );
+              },
+            ),
+          ],
         ),
       ),
+      body: const Center(child: Text('Selecione uma opção no menu')),
     );
   }
 }
