@@ -28,10 +28,11 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       home: const AuthGate(),
       routes: {
-        '/login':         (_) => const LoginPage(),
-        '/registration':  (_) => const RegistrationPage(),
+        '/login': (_) => const LoginPage(),
+        '/registration': (_) => const RegistrationPage(),
       },
-      onUnknownRoute: (_) => MaterialPageRoute(builder: (_) => const LoginPage()),
+      onUnknownRoute:
+          (_) => MaterialPageRoute(builder: (_) => const LoginPage()),
     );
   }
 }
@@ -71,29 +72,27 @@ class _RootNavigationState extends State<RootNavigation> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
-  late final List<String> _titles;
 
   @override
   void initState() {
     super.initState();
     // configura as páginas de “Início” dinâmico e as abas fixas
     _pages = [
-      if (widget.role == 'Master') const MasterHomePage()
-      else if (widget.role == 'Líder') const LeaderHomePage()
-      else const VolunteerHomePage(),
+      if (widget.role == 'Master')
+        const MasterHomePage()
+      else if (widget.role == 'Líder')
+        const LeaderHomePage()
+      else
+        const VolunteerHomePage(),
       const GroupListPage(),
       const ProfilePage(),
     ];
-    _titles = ['Início', 'Grupos', 'Perfil'];
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-      ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -101,18 +100,9 @@ class _RootNavigationState extends State<RootNavigation> {
         unselectedItemColor: cs.primary.withOpacity(0.6),
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Início',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Grupos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Grupos'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
     );
