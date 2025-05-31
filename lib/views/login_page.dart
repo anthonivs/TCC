@@ -12,13 +12,13 @@ class LoginPage extends StatefulWidget {
 
 class LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController    = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final email    = _emailController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     try {
@@ -44,7 +44,9 @@ class LoginPageState extends State<LoginPage> {
   void _navigateToRegistration() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const RegistrationPage()),
+      MaterialPageRoute(
+        builder: (context) => const RegistrationPage(isSelfRegistration: true),
+      ),
     );
   }
 
@@ -63,7 +65,8 @@ class LoginPageState extends State<LoginPage> {
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Por favor, insira o email';
+                  if (v == null || v.isEmpty)
+                    return 'Por favor, insira o email';
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
                     return 'Por favor, insira um email válido';
                   }
@@ -76,7 +79,8 @@ class LoginPageState extends State<LoginPage> {
                 decoration: const InputDecoration(labelText: 'Senha'),
                 obscureText: true,
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Por favor, insira a senha';
+                  if (v == null || v.isEmpty)
+                    return 'Por favor, insira a senha';
                   return null;
                 },
               ),

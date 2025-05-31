@@ -1,5 +1,5 @@
+// lib/utils/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:tccapp/views/group_list_page.dart';
 
 /// Define o tema principal do app
 class AppTheme {
@@ -25,12 +25,13 @@ class AppTheme {
       // Aplica nosso colorScheme
       colorScheme: colorScheme,
 
-      // AppBar em azul forte com texto branco
+      // AppBar em azul forte com texto branco e altura reduzida
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
         centerTitle: true,
+        toolbarHeight: 48, // ajuste aqui a altura que preferir
       ),
 
       // Fundo geral mais claro
@@ -38,14 +39,13 @@ class AppTheme {
 
       // Tipografia padrão
       typography: Typography.material2021(platform: TargetPlatform.android),
-      textTheme: Typography.material2021(platform: TargetPlatform.android).black,
+      textTheme:
+          Typography.material2021(platform: TargetPlatform.android).black,
 
       // Cartões com cantos arredondados e sombra
       cardTheme: CardTheme(
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
@@ -80,7 +80,10 @@ class AppTheme {
         filled: true,
         fillColor: Colors.blue.shade50,
         hintStyle: TextStyle(color: Colors.blueGrey.shade700),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 16,
+        ),
         labelStyle: TextStyle(color: colorScheme.primary),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -136,7 +139,10 @@ class GroupCard extends StatelessWidget {
       child: ExpansionTile(
         title: Text(name, style: Theme.of(context).textTheme.titleLarge),
         subtitle: Text('Líder: $leader'),
-        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -164,24 +170,6 @@ class GroupCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Estrutura básica do app
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TCC App',
-      theme: AppTheme.light,
-      home: const GroupListPage(),
     );
   }
 }

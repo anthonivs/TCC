@@ -128,9 +128,9 @@ class AuthService {
 
     if (current != null &&
         (role == 'Voluntário' || role == 'Líder' || role == 'Master')) {
-      // Usuário logado (Líder ou Master) — chama a Cloud Function
+      // Cadastro via admin (usuário já logado)
       final callable = _functions.httpsCallable('adminCreateUser');
-      final res = await callable.call(<String, dynamic>{
+      final res = await callable.call({
         'email': email,
         'password': password,
         'displayName': name,
@@ -138,31 +138,49 @@ class AuthService {
       });
       newUserId = res.data['uid'] as String;
 
-      // Grava perfil no Firestore
       await _firestore.collection('users').doc(newUserId).set({
         'id': newUserId,
         'name': name,
         'email': email,
         'role': role,
-        'groupIds': groupIds, // coloca vazio por enquanto
+        'groupIds': groupIds,
+      });
+    } else {
+      // Cadastro normal (primeiro acesso, não autenticado)
+      final uc = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      newUserId = uc.user!.uid;
+
+      await _firestore.collection('users').doc(newUserId).set({
+        'id': newUserId,
+        'name': name,
+        'email': email,
+        'role': role,
+        'groupIds': groupIds,
       });
     }
 
-    // 2. Adiciona o novo usuário aos grupos
+    // Adiciona o novo usuário aos grupos
     final batch = _firestore.batch();
-    for (final groupId in groupIds) {
-      final groupRef = _firestore.collection('groups').doc(groupId);
-      batch.update(groupRef, {
-        'userIds': FieldValue.arrayUnion([newUserId]),
-      });
+
+    // Apenas voluntários devem ser adicionados aos grupos
+    if (role == 'Voluntário') {
+      for (final groupId in groupIds) {
+        final groupRef = _firestore.collection('groups').doc(groupId);
+        batch.update(groupRef, {
+          'userIds': FieldValue.arrayUnion([newUserId]),
+        });
+      }
     }
-    // 3. Atualiza o próprio documento do usuário com groupIds
+
+    // Atualiza o próprio documento do usuário com groupIds
     batch.update(_firestore.collection('users').doc(newUserId), {
       'groupIds': groupIds,
     });
     await batch.commit();
 
-    // 4. Busca o perfil criado e retorna
     final newUserDoc =
         await _firestore.collection('users').doc(newUserId).get();
     return newUserDoc.exists ? User.fromMap(newUserDoc.data()!) : null;

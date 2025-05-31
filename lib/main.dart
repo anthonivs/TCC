@@ -97,7 +97,6 @@ class _RootNavigationState extends State<RootNavigation> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         selectedItemColor: cs.primary,
-        unselectedItemColor: cs.primary.withOpacity(0.6),
         onTap: (i) => setState(() => _currentIndex = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
