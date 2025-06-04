@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tccapp/services/auth_service.dart';
 import 'package:tccapp/models/user.dart';
+import 'package:tccapp/views/change_password_page.dart';
 import 'package:tccapp/views/login_page.dart';
 import 'package:tccapp/views/master_home_page.dart';
 import 'package:tccapp/views/leader_home_page.dart';
@@ -12,10 +13,14 @@ import 'package:tccapp/views/profile_page.dart';
 import 'package:tccapp/views/group_list_page.dart';
 import 'package:tccapp/utils/app_theme.dart';
 import 'firebase_options.dart';
+import 'views/forgot_password_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('pt_BR', null);
   runApp(const MyApp());
 }
 
@@ -30,6 +35,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (_) => const LoginPage(),
         '/registration': (_) => const RegistrationPage(),
+        '/change-password': (context) => const ChangePasswordPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
       },
       onUnknownRoute:
           (_) => MaterialPageRoute(builder: (_) => const LoginPage()),

@@ -97,6 +97,12 @@ class LoginPageState extends State<LoginPage> {
                 onPressed: _navigateToRegistration,
                 child: const Text('Não tem uma conta? Cadastre-se'),
               ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/forgot-password');
+                },
+                child: const Text('Esqueceu sua senha?'),
+              ),
             ],
           ),
         ),

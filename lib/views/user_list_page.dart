@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tccapp/views/user_profile_page.dart';
 import '../services/auth_service.dart';
 import '../models/user.dart';
 import '../utils/show_message.dart';
@@ -11,9 +12,7 @@ class UserListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Lista de Usuários'),
-      ),
+      appBar: AppBar(title: const Text('Lista de Usuários')),
       body: StreamBuilder<List<User>>(
         stream: _authService.getUsers(),
         builder: (context, snapshot) {
@@ -22,7 +21,9 @@ class UserListPage extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Erro ao carregar usuários: ${snapshot.error}'));
+            return Center(
+              child: Text('Erro ao carregar usuários: ${snapshot.error}'),
+            );
           }
 
           final users = snapshot.data ?? [];
@@ -30,7 +31,8 @@ class UserListPage extends StatelessWidget {
           return FutureBuilder<User?>(
             future: _authService.currentUser,
             builder: (context, currentUserSnapshot) {
-              if (currentUserSnapshot.connectionState == ConnectionState.waiting) {
+              if (currentUserSnapshot.connectionState ==
+                  ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -47,17 +49,29 @@ class UserListPage extends StatelessWidget {
                   return ListTile(
                     title: Text(user.name),
                     subtitle: Text('${user.email} - ${user.role}'),
-                    trailing: (canDelete || isCurrentUser)
-                        ? IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _confirmDeleteUser(
-                              context,
-                              user,
-                              canDelete,
-                              isCurrentUser,
-                            ),
-                          )
-                        : null,
+                    trailing:
+                        (canDelete || isCurrentUser)
+                            ? IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed:
+                                  () => _confirmDeleteUser(
+                                    context,
+                                    user,
+                                    canDelete,
+                                    isCurrentUser,
+                                  ),
+                            )
+                            : null,
+                    onTap: () {
+                      if (canDelete) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => UserProfilePage(user: user),
+                          ),
+                        );
+                      }
+                    },
                   );
                 },
               );
@@ -76,20 +90,24 @@ class UserListPage extends StatelessWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar Exclusão'),
-        content: Text('Tem certeza que deseja excluir ${user.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmar Exclusão'),
+            content: Text('Tem certeza que deseja excluir ${user.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Excluir',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed != true) return;
@@ -133,26 +151,28 @@ class UserListPage extends StatelessWidget {
     final passwordController = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmação de Senha'),
-        content: TextField(
-          controller: passwordController,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Digite sua senha para confirmar',
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmação de Senha'),
+            content: TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Digite sua senha para confirmar',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed:
+                    () => Navigator.pop(context, passwordController.text),
+                child: const Text('Confirmar'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, passwordController.text),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
     );
   }
 

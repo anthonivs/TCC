@@ -14,7 +14,6 @@ class UnifiedCalendar extends StatefulWidget {
 
 class _UnifiedCalendarState extends State<UnifiedCalendar> {
   late Map<DateTime, List<Event>> _eventsByDate;
-  DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
   @override
@@ -39,16 +38,16 @@ class _UnifiedCalendarState extends State<UnifiedCalendar> {
   @override
   Widget build(BuildContext context) {
     return TableCalendar<Event>(
+      locale: 'pt_BR',
       firstDay: DateTime.utc(2020, 1, 1),
       lastDay: DateTime.utc(2030, 12, 31),
-      focusedDay: _focusedDay,
+      focusedDay: DateTime.now(),
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       eventLoader:
           (day) => _eventsByDate[DateTime(day.year, day.month, day.day)] ?? [],
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
           _selectedDay = selectedDay;
-          _focusedDay = focusedDay;
         });
 
         final selectedEvents =

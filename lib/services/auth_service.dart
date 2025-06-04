@@ -223,4 +223,18 @@ class AuthService {
       return [];
     }
   }
+
+  //ajuste de alteração de senha
+  Future<void> changePassword(String newPassword) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.updatePassword(newPassword);
+    } else {
+      throw Exception('Usuário não autenticado');
+    }
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
 }
