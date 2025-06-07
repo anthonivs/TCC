@@ -86,7 +86,7 @@ class _RootNavigationState extends State<RootNavigation> {
     // configura as páginas de “Início” dinâmico e as abas fixas
     _pages = [
       if (widget.role == 'Master')
-        const MasterHomePage()
+        MasterHomePage()
       else if (widget.role == 'Líder')
         const LeaderHomePage()
       else

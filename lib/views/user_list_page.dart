@@ -143,7 +143,9 @@ class UserListPage extends StatelessWidget {
         Navigator.pushReplacementNamed(context, '/leaderHome');
       }
     } catch (e) {
-      _showErrorMessage(context, e.toString());
+      if (context.mounted) {
+        MessageUtils.showError(context, e.toString());
+      }
     }
   }
 
@@ -174,10 +176,5 @@ class UserListPage extends StatelessWidget {
             ],
           ),
     );
-  }
-
-  void _showErrorMessage(BuildContext context, String message) {
-    if (!context.mounted) return;
-    MessageUtils.showError(context, message);
   }
 }

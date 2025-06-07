@@ -8,7 +8,7 @@ import 'group_calendar_page.dart';
 import 'group_management_page.dart';
 import '../services/auth_service.dart';
 import '../utils/show_message.dart';
-import '../utils/app_theme.dart'; // import do GroupCard
+import '../utils/app_theme.dart';
 
 class GroupListPage extends StatefulWidget {
   const GroupListPage({super.key});
@@ -35,7 +35,6 @@ class _GroupListPageState extends State<GroupListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Enquanto carrega o usuário
     if (currentUser == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Lista de Grupos')),
@@ -53,16 +52,16 @@ class _GroupListPageState extends State<GroupListPage> {
             isMaster
                 ? _groupController.getAllGroups()
                 : _groupController.getGroups(currentUser!.id),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.hasError) {
-            return Center(
-              child: Text('Erro ao carregar grupos: ${snap.error}'),
-            );
+
+          if (snapshot.hasError) {
+            return const Center(child: Text('Erro ao carregar grupos.'));
           }
-          final groups = snap.data ?? [];
+
+          final groups = snapshot.data ?? [];
           if (groups.isEmpty) {
             return const Center(child: Text('Nenhum grupo encontrado.'));
           }
@@ -72,24 +71,21 @@ class _GroupListPageState extends State<GroupListPage> {
             itemCount: groups.length,
             itemBuilder: (context, i) {
               final g = groups[i];
-              // líder só deve editar/excluir se for líder DESSE grupo,
-              // mas Master sempre pode tudo
               final canManage =
                   isMaster || (isLeader && g.leaderId == currentUser!.id);
-              //isMaster || (isLeader && g.leader == currentUser!.id);
 
               return GroupCard(
                 name: g.name,
                 leader: g.leader,
-                volunteersCount: g.volunteers.length,
-                onCalendar:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => GroupCalendarPage(group: g),
-                      ),
+                volunteersCount: g.userIds.length,
+                onCalendar: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GroupCalendarPage(group: g),
                     ),
-                // liberar edição para Master ou Líder daquele grupo
+                  );
+                },
                 onEdit:
                     canManage
                         ? () async {
@@ -102,7 +98,6 @@ class _GroupListPageState extends State<GroupListPage> {
                           if (updated == true && mounted) setState(() {});
                         }
                         : null,
-                // liberar exclusão para Master ou Líder daquele grupo
                 onDelete:
                     canManage ? () => _confirmDeleteGroup(context, g) : null,
               );

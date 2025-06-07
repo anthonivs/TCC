@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/user.dart';
+import '../utils/firebase_error_utils.dart';
 
 class AuthService {
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
@@ -109,11 +110,18 @@ class AuthService {
       _auth.authStateChanges().asyncMap(_userFromFirebase);
 
   Future<User?> login(String email, String password) async {
-    final uc = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    return await _userFromFirebase(uc.user);
+    try {
+      final uc = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return await _userFromFirebase(uc.user);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      final msg = FirebaseErrorTranslator.translate(e.code);
+      throw 'Erro ao fazer login: $msg';
+    } catch (e) {
+      throw 'Erro inesperado ao fazer login: $e';
+    }
   }
 
   Future<User?> register(
@@ -123,67 +131,71 @@ class AuthService {
     required String role,
     required List<String> groupIds,
   }) async {
-    final current = _auth.currentUser;
-    late final String newUserId;
+    try {
+      final current = _auth.currentUser;
+      late final String newUserId;
 
-    if (current != null &&
-        (role == 'Voluntário' || role == 'Líder' || role == 'Master')) {
-      // Cadastro via admin (usuário já logado)
-      final callable = _functions.httpsCallable('adminCreateUser');
-      final res = await callable.call({
-        'email': email,
-        'password': password,
-        'displayName': name,
-        'role': role,
-      });
-      newUserId = res.data['uid'] as String;
+      if (current != null &&
+          (role == 'Voluntário' || role == 'Líder' || role == 'Master')) {
+        final callable = _functions.httpsCallable('adminCreateUser');
+        final res = await callable.call({
+          'email': email,
+          'password': password,
+          'displayName': name,
+          'role': role,
+        });
+        newUserId = res.data['uid'] as String;
 
-      await _firestore.collection('users').doc(newUserId).set({
-        'id': newUserId,
-        'name': name,
-        'email': email,
-        'role': role,
-        'groupIds': groupIds,
-      });
-    } else {
-      // Cadastro normal (primeiro acesso, não autenticado)
-      final uc = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      newUserId = uc.user!.uid;
+        await _firestore.collection('users').doc(newUserId).set({
+          'id': newUserId,
+          'name': name,
+          'email': email,
+          'role': role,
+          'groupIds': groupIds,
+        });
+      } else {
+        final uc = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        newUserId = uc.user!.uid;
 
-      await _firestore.collection('users').doc(newUserId).set({
-        'id': newUserId,
-        'name': name,
-        'email': email,
-        'role': role,
-        'groupIds': groupIds,
-      });
-    }
-
-    // Adiciona o novo usuário aos grupos
-    final batch = _firestore.batch();
-
-    // Apenas voluntários devem ser adicionados aos grupos
-    if (role == 'Voluntário') {
-      for (final groupId in groupIds) {
-        final groupRef = _firestore.collection('groups').doc(groupId);
-        batch.update(groupRef, {
-          'userIds': FieldValue.arrayUnion([newUserId]),
+        await _firestore.collection('users').doc(newUserId).set({
+          'id': newUserId,
+          'name': name,
+          'email': email,
+          'role': role,
+          'groupIds': groupIds,
         });
       }
+
+      final batch = _firestore.batch();
+      if (role == 'Voluntário') {
+        for (final groupId in groupIds) {
+          final groupRef = _firestore.collection('groups').doc(groupId);
+          batch.update(groupRef, {
+            'userIds': FieldValue.arrayUnion([newUserId]),
+          });
+        }
+      }
+
+      batch.update(_firestore.collection('users').doc(newUserId), {
+        'groupIds': groupIds,
+      });
+      await batch.commit();
+
+      final newUserDoc =
+          await _firestore.collection('users').doc(newUserId).get();
+      return newUserDoc.exists ? User.fromMap(newUserDoc.data()!) : null;
+    } on FirebaseFunctionsException catch (e) {
+      final msg = FirebaseErrorTranslator.translate(e.code);
+      throw 'Erro ao cadastrar: $msg';
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      final msg = FirebaseErrorTranslator.translate(e.code);
+      throw 'Erro ao cadastrar: $msg';
+    } catch (e) {
+      throw 'Erro inesperado ao cadastrar: $e';
     }
-
-    // Atualiza o próprio documento do usuário com groupIds
-    batch.update(_firestore.collection('users').doc(newUserId), {
-      'groupIds': groupIds,
-    });
-    await batch.commit();
-
-    final newUserDoc =
-        await _firestore.collection('users').doc(newUserId).get();
-    return newUserDoc.exists ? User.fromMap(newUserDoc.data()!) : null;
   }
 
   Future<void> logout() async => _auth.signOut();
@@ -236,5 +248,25 @@ class AuthService {
 
   Future<void> sendPasswordResetEmail(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  Future<List<User>> getUsersInGroup(String groupId) async {
+    final snapshot =
+        await _firestore
+            .collection('users')
+            .where('groupIds', arrayContains: groupId)
+            .get();
+
+    return snapshot.docs.map((doc) => User.fromMap(doc.data())).toList();
+  }
+
+  Stream<List<User>> getUsersInGroupStream(String groupId) {
+    return _firestore
+        .collection('users')
+        .where('groupIds', arrayContains: groupId)
+        .snapshots()
+        .map(
+          (snap) => snap.docs.map((doc) => User.fromMap(doc.data())).toList(),
+        );
   }
 }

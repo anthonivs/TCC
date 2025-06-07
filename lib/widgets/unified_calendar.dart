@@ -4,7 +4,7 @@ import '../models/event.dart';
 
 class UnifiedCalendar extends StatefulWidget {
   final List<Event> events;
-  final void Function(DateTime, List<Event>)? onDaySelected; // 🔔 novo callback
+  final void Function(DateTime, List<Event>)? onDaySelected;
 
   const UnifiedCalendar({super.key, required this.events, this.onDaySelected});
 
@@ -20,6 +20,16 @@ class _UnifiedCalendarState extends State<UnifiedCalendar> {
   void initState() {
     super.initState();
     _eventsByDate = _groupEventsByDate(widget.events);
+  }
+
+  @override
+  void didUpdateWidget(covariant UnifiedCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.events != widget.events) {
+      setState(() {
+        _eventsByDate = _groupEventsByDate(widget.events);
+      });
+    }
   }
 
   Map<DateTime, List<Event>> _groupEventsByDate(List<Event> events) {

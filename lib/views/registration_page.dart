@@ -34,19 +34,22 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Future<void> _loadGroups() async {
-    final snapshot =
-        await FirebaseFirestore.instance.collection('groups').get();
-    final groups =
-        snapshot.docs.map((doc) {
-          return Group.fromMap({...doc.data(), 'id': doc.id});
-        }).toList();
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('groups').get();
+      final groups =
+          snapshot.docs.map((doc) {
+            return Group.fromMap({...doc.data(), 'id': doc.id});
+          }).toList();
 
-    if (mounted) {
-      setState(() {
-        _groups = groups;
-        // Não pré-seleciona nenhum grupo automaticamente
-        _selectedGroupId = 'none';
-      });
+      if (mounted) {
+        setState(() {
+          _groups = groups;
+          _selectedGroupId = groups.isNotEmpty ? groups.first.id : null;
+        });
+      }
+    } catch (e) {
+      MessageUtils.showError(context, 'Erro ao carregar grupos.');
     }
   }
 
@@ -54,11 +57,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     final current = await _authService.currentUser;
 
     List<String> roles;
-    if (widget.isSelfRegistration) {
-      // Auto cadastro: somente voluntário
-      roles = ['Voluntário'];
-    } else if (current == null) {
-      // fallback, caso raro
+    if (widget.isSelfRegistration || current == null) {
       roles = ['Voluntário'];
     } else if (current.role == 'Master') {
       roles = ['Voluntário', 'Líder'];
@@ -66,17 +65,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
       roles = ['Voluntário'];
     }
 
-    if (!mounted) return;
-    setState(() {
-      _availableRoles = roles;
-      _selectedRole = roles.first;
-    });
+    if (mounted) {
+      setState(() {
+        _availableRoles = roles;
+        _selectedRole = roles.first;
+      });
+    }
   }
 
   Future<void> _onRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validação extra para grupo (obrigatório só para Voluntário ou se houver grupos)
     if (_selectedRole == null ||
         (_selectedRole == 'Voluntário' && _selectedGroupId == null)) {
       MessageUtils.showError(
@@ -92,17 +91,34 @@ class _RegistrationPageState extends State<RegistrationPage> {
         _passwordController.text,
         name: _nameController.text,
         role: _selectedRole!,
-        groupIds:
-            (_selectedGroupId != null && _selectedGroupId != 'none')
-                ? [_selectedGroupId!]
-                : [],
+        groupIds: (_selectedGroupId != null) ? [_selectedGroupId!] : [],
       );
-      if (!context.mounted) return;
+
+      if (!mounted) return;
       MessageUtils.showSuccess(context, 'Usuário cadastrado com sucesso!');
       Navigator.pop(context);
     } catch (e) {
-      if (!context.mounted) return;
-      MessageUtils.showError(context, e.toString());
+      if (!mounted) return;
+      final message = e.toString();
+
+      if (message.contains('email-already-in-use')) {
+        MessageUtils.showError(
+          context,
+          'Este e-mail já está em uso por outra conta.',
+        );
+      } else if (message.contains('invalid-email')) {
+        MessageUtils.showError(context, 'E-mail inválido.');
+      } else if (message.contains('weak-password')) {
+        MessageUtils.showError(
+          context,
+          'Senha fraca. Use no mínimo 6 caracteres.',
+        );
+      } else {
+        MessageUtils.showError(
+          context,
+          'Erro ao cadastrar: ${message.replaceAll('Exception: ', '')}',
+        );
+      }
     }
   }
 
@@ -116,7 +132,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
           key: _formKey,
           child: ListView(
             children: [
-              // Nome
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome'),
@@ -124,8 +139,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     (v) => v == null || v.isEmpty ? 'Informe o nome' : null,
               ),
               const SizedBox(height: 12),
-
-              // Email
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -134,8 +147,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         v != null && v.contains('@') ? null : 'Email inválido',
               ),
               const SizedBox(height: 12),
-
-              // Senha
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Senha'),
@@ -148,7 +159,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
               const SizedBox(height: 12),
 
-              // Tipo de Usuário (role)
               if (_availableRoles.isNotEmpty) ...[
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
@@ -166,29 +176,23 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 const SizedBox(height: 12),
               ],
 
-              // Grupo (opcional para Líder se não houver grupos)
               if (_selectedRole == 'Voluntário' || _groups.isNotEmpty) ...[
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
                     labelText: 'Selecionar Grupo',
                   ),
                   value: _selectedGroupId,
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: 'none',
-                      child: Text('Nenhum grupo'),
-                    ),
-                    ..._groups.map((g) {
-                      return DropdownMenuItem(value: g.id, child: Text(g.name));
-                    }).toList(),
-                  ],
-
+                  items:
+                      _groups.map((g) {
+                        return DropdownMenuItem(
+                          value: g.id,
+                          child: Text(g.name),
+                        );
+                      }).toList(),
                   onChanged: (v) => setState(() => _selectedGroupId = v),
                   validator: (v) {
                     if (_selectedRole == 'Voluntário') {
-                      return v == null
-                          ? 'Escolha um grupo ou selecione "Nenhum grupo"'
-                          : null;
+                      return v == null ? 'Escolha um grupo' : null;
                     }
                     return null;
                   },
@@ -196,7 +200,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 const SizedBox(height: 24),
               ],
 
-              // Botão Cadastrar
               ElevatedButton(
                 onPressed: _onRegister,
                 child: const Text('Cadastrar'),

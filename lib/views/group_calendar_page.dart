@@ -13,7 +13,7 @@ class GroupCalendarPage extends StatefulWidget {
   const GroupCalendarPage({super.key, required this.group});
 
   @override
-  GroupCalendarPageState createState() => GroupCalendarPageState();
+  State<GroupCalendarPage> createState() => GroupCalendarPageState();
 }
 
 class GroupCalendarPageState extends State<GroupCalendarPage> {
@@ -36,23 +36,26 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
   }
 
   Future<void> _loadUserData() async {
-    final user = await _authService.currentUser;
-    final allUsers = await _authService.getAllUsers();
-    final groupUsers =
-        allUsers.where((u) => widget.group.userIds.contains(u.id)).toList();
+    try {
+      final user = await _authService.currentUser;
+      final allUsers = await _authService.getAllUsers();
+      final groupUsers =
+          allUsers.where((u) => widget.group.userIds.contains(u.id)).toList();
 
-    setState(() {
-      _currentUser = user;
-      _groupUsers = groupUsers;
-    });
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _groupUsers = groupUsers;
+        });
+      }
+    } catch (e) {
+      MessageUtils.showError(context, 'Erro ao carregar dados do grupo.');
+    }
   }
 
   void _addEvent() {
     if (_selectedDay == null) {
-      MessageUtils.showInfo(
-        context,
-        'Por favor, selecione um dia no calendário.',
-      );
+      MessageUtils.showInfo(context, 'Selecione um dia no calendário.');
       return;
     }
 
@@ -66,24 +69,20 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
         return StatefulBuilder(
           builder:
               (context, setState) => AlertDialog(
-                title: Text('Adicionar Evento'),
+                title: const Text('Adicionar Evento'),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Descrição do evento',
-                      ),
+                      decoration: const InputDecoration(hintText: 'Descrição'),
                       onChanged: (value) => newEvent = value,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Localização do evento',
-                      ),
+                      decoration: const InputDecoration(hintText: 'Local'),
                       onChanged: (value) => newLocation = value,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     InkWell(
                       onTap: () async {
                         final time = await showTimePicker(
@@ -97,15 +96,15 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                         }
                       },
                       child: InputDecorator(
-                        decoration: InputDecoration(
-                          hintText: 'Horário do evento',
+                        decoration: const InputDecoration(
+                          hintText: 'Horário',
                           border: OutlineInputBorder(),
                         ),
                         child: Text(
                           selectedTime != null
                               ? selectedTime!.format(context)
                               : 'Selecione o horário',
-                          style: TextStyle(fontSize: 16),
+                          style: const TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
@@ -114,43 +113,42 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                 actions: [
                   TextButton(
                     onPressed: () async {
-                      if (newEvent.isNotEmpty &&
-                          newLocation.isNotEmpty &&
-                          selectedTime != null) {
-                        final event = Event(
-                          date: DateTime(
-                            _selectedDay!.year,
-                            _selectedDay!.month,
-                            _selectedDay!.day,
-                          ),
-                          description: newEvent,
-                          location: newLocation,
-                          time: selectedTime!.format(context),
-                          groupId: widget.group.id,
-                        );
-                        try {
-                          await _eventController.addEvent(event);
-                          if (!mounted) return;
-                          Navigator.pop(context);
-                          MessageUtils.showSuccess(
-                            context,
-                            'Evento adicionado com sucesso!',
-                          );
-                        } catch (e) {
-                          if (!mounted) return;
-                          MessageUtils.showError(
-                            context,
-                            'Erro ao adicionar evento.',
-                          );
-                        }
-                      } else {
+                      if (newEvent.isEmpty ||
+                          newLocation.isEmpty ||
+                          selectedTime == null) {
                         MessageUtils.showInfo(
                           context,
-                          'Por favor, preencha todos os campos.',
+                          'Preencha todos os campos.',
+                        );
+                        return;
+                      }
+
+                      final event = Event(
+                        date: DateTime(
+                          _selectedDay!.year,
+                          _selectedDay!.month,
+                          _selectedDay!.day,
+                        ),
+                        description: newEvent,
+                        location: newLocation,
+                        time: selectedTime!.format(context),
+                        groupId: widget.group.id,
+                      );
+
+                      try {
+                        await _eventController.addEvent(event);
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        MessageUtils.showSuccess(context, 'Evento adicionado!');
+                      } catch (e) {
+                        if (!mounted) return;
+                        MessageUtils.showError(
+                          context,
+                          'Erro ao adicionar evento.',
                         );
                       }
                     },
-                    child: Text('Salvar'),
+                    child: const Text('Salvar'),
                   ),
                 ],
               ),
@@ -165,16 +163,15 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
       appBar: AppBar(title: Text('Calendário do Grupo ${widget.group.name}')),
       body:
           _currentUser == null
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : StreamBuilder<List<Event>>(
                 stream: _eventController.getEvents(widget.group.id),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
-                    print('ERRO DO SNAPSHOT: ${snapshot.error}');
                     final errorMsg =
                         snapshot.error.toString().contains('permission-denied')
                             ? 'Permissão negada. Verifique as regras do Firestore.'
@@ -183,6 +180,13 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                   }
 
                   final allEvents = snapshot.data ?? [];
+                  final dayEvents =
+                      allEvents
+                          .where(
+                            (e) =>
+                                isSameDay(e.date, _selectedDay ?? _focusedDay),
+                          )
+                          .toList();
 
                   return Column(
                     children: [
@@ -190,176 +194,151 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                         locale: 'pt_BR',
                         firstDay: DateTime.utc(2020, 1, 1),
                         lastDay: DateTime.utc(2030, 12, 31),
-                        focusedDay: DateTime.now(),
+                        focusedDay: _focusedDay,
                         calendarFormat: _calendarFormat,
                         selectedDayPredicate:
-                            (day) => isSameDay(_selectedDay, day),
+                            (day) => isSameDay(_selectedDay!, day),
                         onDaySelected: (selectedDay, focusedDay) {
                           setState(() {
                             _selectedDay = selectedDay;
                             _focusedDay = focusedDay;
                           });
                         },
-                        onFormatChanged:
-                            (format) =>
-                                setState(() => _calendarFormat = format),
+                        onFormatChanged: (format) {
+                          setState(() {
+                            _calendarFormat = format;
+                          });
+                        },
                         eventLoader:
                             (day) =>
                                 allEvents
-                                    .where(
-                                      (event) => isSameDay(event.date, day),
-                                    )
+                                    .where((e) => isSameDay(e.date, day))
                                     .toList(),
                       ),
                       const SizedBox(height: 16),
                       Expanded(
-                        child: ListView(
-                          children:
-                              allEvents
-                                  .where(
-                                    (event) => isSameDay(
-                                      event.date,
-                                      _selectedDay ?? _focusedDay,
-                                    ),
-                                  )
-                                  .map((event) {
-                                    final isConfirmed = event.confirmedUserIds
-                                        .contains(_currentUser!.id);
-                                    final isLeader =
-                                        _currentUser!.role == 'Líder';
-                                    final confirmedUsers = _groupUsers
-                                        .where(
-                                          (u) => event.confirmedUserIds
-                                              .contains(u.id),
-                                        )
-                                        .map((u) => '- ${u.name}')
-                                        .join('\n');
+                        child: ListView.builder(
+                          itemCount: dayEvents.length,
+                          itemBuilder: (context, index) {
+                            final event = dayEvents[index];
+                            final isConfirmed = event.confirmedUserIds.contains(
+                              _currentUser!.id,
+                            );
+                            final isLeader = _currentUser!.role == 'Líder';
+                            final confirmedUsers = _groupUsers
+                                .where(
+                                  (u) => event.confirmedUserIds.contains(u.id),
+                                )
+                                .map((u) => '- ${u.name}')
+                                .join('\n');
 
-                                    return Card(
-                                      margin: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      child: ExpansionTile(
-                                        key: ValueKey(event.id),
-                                        initiallyExpanded:
-                                            _expandedEventId == event.id,
-                                        onExpansionChanged: (expanded) {
-                                          setState(() {
-                                            _expandedEventId =
-                                                expanded ? event.id : null;
-                                          });
-                                        },
-                                        title: Text(event.description),
-                                        subtitle: Text(
-                                          'Confirmados: ${event.confirmedUserIds.length}',
-                                        ),
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16.0,
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Local: ${event.location}',
-                                                ),
-                                                Text('Horário: ${event.time}'),
-                                                const SizedBox(height: 8),
-                                                if (isLeader &&
-                                                    confirmedUsers.isNotEmpty)
-                                                  Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        'Confirmados:',
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      Text(confirmedUsers),
-                                                    ],
-                                                  ),
-                                                const SizedBox(height: 8),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
-                                                  children: [
-                                                    TextButton.icon(
-                                                      onPressed: () async {
-                                                        await _eventController
-                                                            .toggleAttendance(
-                                                              event.id!,
-                                                            );
-                                                        setState(() {});
-                                                      },
-                                                      icon: Icon(
-                                                        isConfirmed
-                                                            ? Icons.cancel
-                                                            : Icons
-                                                                .check_circle,
-                                                        color:
-                                                            isConfirmed
-                                                                ? Colors.red
-                                                                : Colors.green,
-                                                      ),
-                                                      label: Text(
-                                                        isConfirmed
-                                                            ? 'Cancelar presença'
-                                                            : 'Confirmar presença',
-                                                        style: TextStyle(
-                                                          color:
-                                                              isConfirmed
-                                                                  ? Colors.red
-                                                                  : Colors
-                                                                      .green,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    if (isLeader)
-                                                      IconButton(
-                                                        icon: Icon(
-                                                          Icons.delete,
-                                                          color: Colors.red,
-                                                        ),
-                                                        onPressed: () async {
-                                                          try {
-                                                            await _eventController
-                                                                .deleteEvent(
-                                                                  event.id!,
-                                                                );
-                                                            if (!mounted)
-                                                              return;
-                                                            MessageUtils.showSuccess(
-                                                              context,
-                                                              'Evento excluído com sucesso!',
-                                                            );
-                                                          } catch (e) {
-                                                            if (!mounted)
-                                                              return;
-                                                            MessageUtils.showError(
-                                                              context,
-                                                              'Erro ao excluir evento.',
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
-                                                  ],
-                                                ),
-                                              ],
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              child: ExpansionTile(
+                                key: ValueKey(event.id),
+                                initiallyExpanded: _expandedEventId == event.id,
+                                onExpansionChanged: (expanded) {
+                                  setState(() {
+                                    _expandedEventId =
+                                        expanded ? event.id : null;
+                                  });
+                                },
+                                title: Text(event.description),
+                                subtitle: Text(
+                                  'Confirmados: ${event.confirmedUserIds.length}',
+                                ),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Local: ${event.location}'),
+                                        Text('Horário: ${event.time}'),
+                                        const SizedBox(height: 8),
+                                        if (isLeader &&
+                                            confirmedUsers.isNotEmpty) ...[
+                                          const Text(
+                                            'Confirmados:',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
+                                          Text(confirmedUsers),
+                                          const SizedBox(height: 8),
                                         ],
-                                      ),
-                                    );
-                                  })
-                                  .toList(),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            TextButton.icon(
+                                              onPressed: () async {
+                                                await _eventController
+                                                    .toggleAttendance(
+                                                      event.id!,
+                                                    );
+                                                setState(() {});
+                                              },
+                                              icon: Icon(
+                                                isConfirmed
+                                                    ? Icons.cancel
+                                                    : Icons.check_circle,
+                                                color:
+                                                    isConfirmed
+                                                        ? Colors.red
+                                                        : Colors.green,
+                                              ),
+                                              label: Text(
+                                                isConfirmed
+                                                    ? 'Cancelar presença'
+                                                    : 'Confirmar presença',
+                                                style: TextStyle(
+                                                  color:
+                                                      isConfirmed
+                                                          ? Colors.red
+                                                          : Colors.green,
+                                                ),
+                                              ),
+                                            ),
+                                            if (isLeader)
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed: () async {
+                                                  try {
+                                                    await _eventController
+                                                        .deleteEvent(event.id!);
+                                                    if (!mounted) return;
+                                                    MessageUtils.showSuccess(
+                                                      context,
+                                                      'Evento excluído!',
+                                                    );
+                                                  } catch (e) {
+                                                    if (!mounted) return;
+                                                    MessageUtils.showError(
+                                                      context,
+                                                      'Erro ao excluir evento.',
+                                                    );
+                                                  }
+                                                },
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -368,8 +347,12 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
               ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addEvent,
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
+}
+
+bool isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

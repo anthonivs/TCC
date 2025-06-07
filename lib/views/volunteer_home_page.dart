@@ -4,7 +4,7 @@ import 'package:tccapp/models/event.dart';
 import 'package:tccapp/widgets/unified_calendar.dart';
 import '../services/auth_service.dart';
 import 'group_list_page.dart';
-import '../views/profile_page.dart'; // para navegar ao perfil
+import '../views/profile_page.dart';
 import '../models/user.dart';
 
 class VolunteerHomePage extends StatefulWidget {
@@ -18,23 +18,18 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> {
   final EventController _eventController = EventController();
   User? currentUser;
   String? _expandedEventId;
-  List<Event> _events = [];
-  List<Event> _selectedDayEvents = [];
-  bool _isLoading = true;
+  DateTime _selectedDay = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    _loadCurrentUser();
   }
 
-  Future<void> _loadEvents() async {
+  Future<void> _loadCurrentUser() async {
     final user = await AuthService().currentUser;
-    final events = await _eventController.getUserRelatedEvents();
     setState(() {
       currentUser = user;
-      _events = events;
-      _isLoading = false;
     });
   }
 
@@ -72,7 +67,6 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> {
               leading: const Icon(Icons.calendar_today),
               title: const Text('Calendário de Atividades'),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const GroupListPage()),
@@ -83,7 +77,6 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> {
               leading: const Icon(Icons.person),
               title: const Text('Perfil'),
               onTap: () {
-                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ProfilePage()),
@@ -93,109 +86,83 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> {
           ],
         ),
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    UnifiedCalendar(
-                      events: _events,
-                      onDaySelected: (day, events) {
-                        setState(() {
-                          _selectedDayEvents = events;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _selectedDayEvents.length,
-                        itemBuilder: (context, index) {
-                          final eventId = _selectedDayEvents[index].id;
-                          final event = _events.firstWhere(
-                            (e) => e.id == eventId,
-                          ); // sempre atualizado
-                          final isConfirmed = event.confirmedUserIds.contains(
-                            currentUser?.id,
-                          );
+      body: StreamBuilder<List<Event>>(
+        stream: _eventController.getUserRelatedEventsStream(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            child: ExpansionTile(
-                              key: ValueKey(event.id),
-                              initiallyExpanded: _expandedEventId == event.id,
-                              onExpansionChanged: (expanded) {
-                                setState(() {
-                                  _expandedEventId = expanded ? event.id : null;
-                                });
-                              },
-                              title: Text(event.description),
-                              subtitle: Text(
-                                'Confirmados: ${event.confirmedUserIds.length}',
+          final events = snapshot.data!;
+          final selectedEvents =
+              events.where((e) => isSameDay(e.date, _selectedDay)).toList();
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                UnifiedCalendar(
+                  events: events,
+                  onDaySelected: (day, evts) {
+                    setState(() {
+                      _selectedDay = day;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: selectedEvents.length,
+                    itemBuilder: (context, index) {
+                      final event = selectedEvents[index];
+                      final isConfirmed = event.confirmedUserIds.contains(
+                        currentUser?.id,
+                      );
+                      final isAssigned = event.assignedUserIds.contains(
+                        currentUser?.id,
+                      );
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: ExpansionTile(
+                          key: ValueKey(event.id),
+                          initiallyExpanded: _expandedEventId == event.id,
+                          onExpansionChanged: (expanded) {
+                            setState(() {
+                              _expandedEventId = expanded ? event.id : null;
+                            });
+                          },
+                          title: Text(event.description),
+                          subtitle: Text(
+                            "Confirmados: ${event.confirmedUserIds.length}",
+                          ),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
                               ),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Local: ${event.location}'),
-                                      Text('Horário: ${event.time}'),
-                                      const SizedBox(height: 8),
-                                      Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Local: ${event.location}"),
+                                  Text("Horário: ${event.time}"),
+                                  const SizedBox(height: 8),
+                                  isAssigned
+                                      ? Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.end,
                                         children: [
                                           TextButton.icon(
                                             onPressed: () async {
-                                              final selectedDate = DateTime(
-                                                event.date.year,
-                                                event.date.month,
-                                                event.date.day,
-                                              );
-
                                               await _eventController
                                                   .toggleAttendance(event.id!);
-
-                                              final updatedEvents =
-                                                  await _eventController
-                                                      .getUserRelatedEvents();
-
-                                              final updatedEvent = updatedEvents
-                                                  .firstWhere(
-                                                    (e) => e.id == event.id,
-                                                  );
-
                                               setState(() {
-                                                _events = updatedEvents;
-                                                _selectedDayEvents =
-                                                    updatedEvents
-                                                        .where(
-                                                          (e) =>
-                                                              e.date.year ==
-                                                                  selectedDate
-                                                                      .year &&
-                                                              e.date.month ==
-                                                                  selectedDate
-                                                                      .month &&
-                                                              e.date.day ==
-                                                                  selectedDate
-                                                                      .day,
-                                                        )
-                                                        .toList();
-                                                _expandedEventId =
-                                                    updatedEvent.id;
+                                                _expandedEventId = event.id;
                                               });
                                             },
-
                                             icon: Icon(
                                               isConfirmed
                                                   ? Icons.cancel
@@ -218,19 +185,34 @@ class _VolunteerHomePageState extends State<VolunteerHomePage> {
                                             ),
                                           ),
                                         ],
+                                      )
+                                      : const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 8.0,
+                                        ),
+                                        child: Text(
+                                          'Você não está escalado para este evento.',
+                                          style: TextStyle(color: Colors.grey),
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
+}
+
+bool isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

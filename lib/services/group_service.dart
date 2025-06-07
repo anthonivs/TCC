@@ -6,12 +6,23 @@ class GroupService {
 
   // Adiciona um novo grupo
   Future<void> addGroup(Group group) async {
-    await _firestore.collection('groups').doc(group.id).set(group.toMap());
+    try {
+      await _firestore.collection('groups').doc(group.id).set(group.toMap());
+    } catch (e) {
+      throw 'Erro ao adicionar grupo: $e';
+    }
   }
 
   // Atualiza um grupo existente
   Future<void> updateGroup(Group oldGroup, Group newGroup) async {
-    await _firestore.collection('groups').doc(newGroup.id).update(newGroup.toMap());
+    try {
+      await _firestore
+          .collection('groups')
+          .doc(newGroup.id)
+          .update(newGroup.toMap());
+    } catch (e) {
+      throw 'Erro ao atualizar grupo: $e';
+    }
   }
 
   // Deleta um grupo e todos os seus eventos associados
@@ -19,50 +30,53 @@ class GroupService {
     final batch = _firestore.batch();
 
     try {
-      // Referência ao grupo
       final groupRef = _firestore.collection('groups').doc(group.id);
 
-      // Busca eventos associados ao grupo
-      final eventsQuery = await _firestore
-          .collection('events')
-          .where('groupId', isEqualTo: group.id)
-          .get();
+      final eventsQuery =
+          await _firestore
+              .collection('events')
+              .where('groupId', isEqualTo: group.id)
+              .get();
 
-      // Adiciona exclusão de cada evento no batch
       for (var doc in eventsQuery.docs) {
         batch.delete(doc.reference);
       }
 
-      // Deleta o grupo
       batch.delete(groupRef);
 
-      // Executa o batch
       await batch.commit();
-      print('✅ Grupo e eventos excluídos com sucesso.');
     } catch (e) {
-      print('❌ Erro ao deletar grupo e eventos: $e');
-      rethrow;
+      throw 'Erro ao deletar grupo e eventos associados: $e';
     }
   }
 
   // Retorna grupos onde o usuário está listado
   Stream<List<Group>> getGroups(String userId) {
-    print("🔍 Buscando grupos para o usuário: $userId");
-    return _firestore
-        .collection('groups')
-        .where('userIds', arrayContains: userId)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs.map((doc) => Group.fromMap(doc.data())).toList();
-        });
+    try {
+      return _firestore
+          .collection('groups')
+          .where('userIds', arrayContains: userId)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => Group.fromMap({...doc.data(), 'id': doc.id}))
+                .toList();
+          });
+    } catch (e) {
+      throw 'Erro ao buscar grupos do usuário: $e';
+    }
   }
 
+  // Retorna todos os grupos
   Stream<List<Group>> getAllGroups() {
-  return _firestore
-      .collection('groups')
-      .snapshots()
-      .map((snap) => snap.docs
-          .map((doc) => Group.fromMap({...doc.data(), 'id': doc.id}))
-          .toList());
-}
+    try {
+      return _firestore.collection('groups').snapshots().map((snap) {
+        return snap.docs
+            .map((doc) => Group.fromMap({...doc.data(), 'id': doc.id}))
+            .toList();
+      });
+    } catch (e) {
+      throw 'Erro ao buscar todos os grupos: $e';
+    }
+  }
 }

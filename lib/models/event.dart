@@ -5,7 +5,8 @@ class Event {
   final String location;
   final String time;
   final String groupId;
-  final List<String> confirmedUserIds; // ✅ novo campo
+  final List<String> confirmedUserIds;
+  final List<String> assignedUserIds;
 
   Event({
     this.id,
@@ -14,7 +15,8 @@ class Event {
     required this.location,
     required this.time,
     required this.groupId,
-    this.confirmedUserIds = const [], // valor padrão
+    this.confirmedUserIds = const [],
+    this.assignedUserIds = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -24,7 +26,8 @@ class Event {
       'location': location,
       'time': time,
       'groupId': groupId,
-      'confirmedUserIds': confirmedUserIds, // salva no Firestore
+      'confirmedUserIds': confirmedUserIds,
+      'assignedUserIds': assignedUserIds,
     };
   }
 
@@ -36,9 +39,14 @@ class Event {
       location: map['location'],
       time: map['time'],
       groupId: map['groupId'],
-      confirmedUserIds: map['confirmedUserIds'] != null
-          ? List<String>.from(map['confirmedUserIds'])
-          : [],
+      confirmedUserIds:
+          map['confirmedUserIds'] != null
+              ? List<String>.from(map['confirmedUserIds'])
+              : [],
+      assignedUserIds:
+          map['assignedUserIds'] != null
+              ? List<String>.from(map['assignedUserIds'])
+              : [],
     );
   }
 }
