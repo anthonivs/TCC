@@ -14,6 +14,7 @@ module.exports = {
   parser: "@typescript-eslint/parser",
   parserOptions: {
     project: ["tsconfig.json", "tsconfig.dev.json"],
+    tsconfigRootDir: __dirname,
     sourceType: "module",
   },
   ignorePatterns: [
@@ -22,8 +23,8 @@ module.exports = {
   plugins: ["@typescript-eslint", "import"],
   rules: {
     "quotes": ["error", "double"], // Força aspas duplas
-    "max-len": ["error", {"code": 120}], // Aumenta limite de linha para 120 caracteres
-    "object-curly-spacing": ["error", "never"], // Remove espaços em { }
+    "max-len": ["error", { "code": 120 }], // Aumenta limite de linha para 120 caracteres
+    "object-curly-spacing": ["error", "always"], // Remove espaços em { }
     "indent": ["error", 2], // Indentação com 2 espaços
     "require-jsdoc": "off", // Desativa exigência de JSDoc
     "no-trailing-spaces": "error", // Mantém verificação de espaços extras

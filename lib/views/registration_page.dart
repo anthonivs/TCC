@@ -99,9 +99,11 @@ class _RegistrationPageState extends State<RegistrationPage> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
+
       final message = e.toString();
 
-      if (message.contains('email-already-in-use')) {
+      if (message.contains('already-exists') ||
+          message.contains('email-already-in-use')) {
         MessageUtils.showError(
           context,
           'Este e-mail já está em uso por outra conta.',
@@ -113,6 +115,13 @@ class _RegistrationPageState extends State<RegistrationPage> {
           context,
           'Senha fraca. Use no mínimo 6 caracteres.',
         );
+      } else if (message.contains('PlatformException')) {
+        final cleaned =
+            message
+                .replaceAll(RegExp(r'PlatformException\((.*?),\s*'), '')
+                .replaceAll(RegExp(r',.*\)'), '')
+                .trim();
+        MessageUtils.showError(context, 'Erro ao cadastrar: $cleaned');
       } else {
         MessageUtils.showError(
           context,

@@ -1,10 +1,10 @@
 import * as admin from "firebase-admin";
 // eslint-disable-next-line import/no-unresolved
-import {https} from "firebase-functions/v2";
+import { https } from "firebase-functions/v2";
 // eslint-disable-next-line import/no-unresolved
-import {onSchedule} from "firebase-functions/v2/scheduler";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 // eslint-disable-next-line import/no-unresolved
-import {logger} from "firebase-functions";
+import { logger } from "firebase-functions";
 
 admin.initializeApp();
 
@@ -12,7 +12,7 @@ admin.initializeApp();
  * Callable function — delete user: Master remove qualquer um; Líder só Voluntário
  */
 export const adminDeleteUser = https.onCall(
-  {region: "us-central1"},
+  { region: "us-central1" },
   async (request) => {
     // 1️⃣ Checa autenticação
     const auth = request.auth;
@@ -63,7 +63,7 @@ export const adminDeleteUser = https.onCall(
     try {
       await admin.auth().deleteUser(targetUid);
       await admin.firestore().collection("users").doc(targetUid).delete();
-      return {message: "Usuário deletado com sucesso."};
+      return { message: "Usuário deletado com sucesso." };
     } catch (error: any) {
       throw new https.HttpsError("unknown", error.message);
     }
@@ -75,9 +75,9 @@ export const adminDeleteUser = https.onCall(
  * Callable function — envia notificação para múltiplos tokens via FCM HTTP v1
  */
 export const sendGroupNotification = https.onCall(
-  {region: "us-central1"},
+  { region: "us-central1" },
   async (request) => {
-    const {tokens, title, body} = request.data as {
+    const { tokens, title, body } = request.data as {
       tokens: string[];
       title: string;
       body: string;
@@ -88,7 +88,7 @@ export const sendGroupNotification = https.onCall(
     }
 
     const message = {
-      notification: {title, body},
+      notification: { title, body },
       tokens,
     };
 
@@ -111,7 +111,7 @@ export const sendGroupNotification = https.onCall(
  * ⏰ Função agendada — Envia lembretes para eventos em 1 dia ou 3 horas
  */
 export const checkUpcomingEvents = onSchedule(
-  {schedule: "every 60 minutes", timeZone: "America/Sao_Paulo"},
+  { schedule: "every 60 minutes", timeZone: "America/Sao_Paulo" },
   async () => {
     const now = new Date();
     const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -161,14 +161,55 @@ export const checkUpcomingEvents = onSchedule(
 );
 
 export const adminCreateUser = https.onCall(
-  {region: "us-central1"},
+  { region: "us-central1" },
   async (request) => {
     const auth = request.auth;
+
+    const { email, password, displayName, role } = request.data as {
+      email: string;
+      password: string;
+      displayName?: string;
+      role: "Voluntário" | "Líder" | "Master";
+    };
+
+    if (!email || !password || !role) {
+      throw new https.HttpsError("invalid-argument", "E-mail, senha e papel são obrigatórios.");
+    }
+
+    // Permitir auto cadastro de voluntário sem autenticação
+    if (!auth && role === "Voluntário") {
+      try {
+        const userRecord = await admin.auth().createUser({
+          email,
+          password,
+          displayName: displayName || "",
+        });
+
+        await admin.auth().setCustomUserClaims(userRecord.uid, { role });
+
+        await admin.firestore().collection("users").doc(userRecord.uid).set({
+          email,
+          displayName: displayName || "",
+          role,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return { uid: userRecord.uid };
+      } catch (error: any) {
+        if (error.code === "auth/email-already-exists") {
+          throw new https.HttpsError("already-exists", "Este e-mail já está em uso.");
+        }
+
+        // Repassa outros erros
+        throw new https.HttpsError("unknown", error.message);
+      }
+    }
+
+    // Caso contrário: precisa estar autenticado como Líder ou Master
     if (!auth) {
       throw new https.HttpsError("unauthenticated", "Usuário não autenticado.");
     }
 
-    // verifica papel de quem chamou
     const requesterUid = auth.uid;
     const requesterSnap = await admin
       .firestore()
@@ -181,44 +222,30 @@ export const adminCreateUser = https.onCall(
       throw new https.HttpsError("permission-denied", "Sem permissão para criar usuários.");
     }
 
-    // dados do novo usuário esperados no request.data
-    const {email, password, displayName, role} = request.data as {
-      email: string;
-      password: string;
-      displayName?: string;
-      role: "Voluntário" | "Líder" | "Master";
-    };
-
-    if (!email || !password || !role) {
-      throw new https.HttpsError("invalid-argument", "E-mail, senha e papel são obrigatórios.");
-    }
-
     try {
-      // cria o usuário no Auth
       const userRecord = await admin.auth().createUser({
         email,
         password,
         displayName: displayName || "",
       });
 
-      // define custom claim para controle de segurança
-      await admin.auth().setCustomUserClaims(userRecord.uid, {role});
+      await admin.auth().setCustomUserClaims(userRecord.uid, { role });
 
-      // cria documento no Firestore
-      await admin
-        .firestore()
-        .collection("users")
-        .doc(userRecord.uid)
-        .set({
-          email,
-          displayName: displayName || "",
-          role,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      await admin.firestore().collection("users").doc(userRecord.uid).set({
+        email,
+        displayName: displayName || "",
+        role,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-      return {uid: userRecord.uid};
+      return { uid: userRecord.uid };
     } catch (error: any) {
+      if (error.code === "auth/email-already-exists") {
+        throw new https.HttpsError("already-exists", "Este e-mail já está em uso por outra conta.");
+      }
+      // Repassa outros erros como desconhecidos
       throw new https.HttpsError("unknown", error.message);
     }
   }
 );
+
