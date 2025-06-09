@@ -55,7 +55,7 @@ O projeto consiste no desenvolvimento de um aplicativo móvel para gestão de eq
 
 ---
 
-## 📐 Qualidade
+##  Qualidade
 
 - Organização em `models/`, `controllers/`, `views/`, `services/` e `widgets/`
 - Boas práticas com `flutter_lints`
@@ -113,7 +113,7 @@ Durante a gestão de voluntários em eventos comunitários, observou-se dificuld
 
 ---
 
-## 🏗️ Modelagem
+##  Modelagem
 
 - Arquitetura baseada em MVC com separação clara entre lógica de controle, serviços e UI.
 - `Controller` para lógica de negócio (`event_controller.dart`, `group_controller.dart`)
