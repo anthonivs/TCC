@@ -103,8 +103,8 @@ Durante a gestão de voluntários em eventos comunitários, observou-se dificuld
 - Notificações push para avisos sobre eventos e atualizações no calendário.
 - Perfil de usuário com informações básicas e histórico de participação.
 
-### Não Funcionais ⚙
-- O aplicativo deve ser desenvolvido para iOS.
+### Não Funcionais 
+- O aplicativo deve ser desenvolvido para iOS e Android.
 - O tempo de carregamento das páginas deve ser inferior a 3 segundos.
 - O banco de dados deve ser seguro e escalável.
 - O código deve seguir as boas práticas de desenvolvimento (clean code).
