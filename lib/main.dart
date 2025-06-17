@@ -1,6 +1,7 @@
-// lib/main.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:tccapp/services/auth_service.dart';
 import 'package:tccapp/models/user.dart';
 import 'package:tccapp/views/change_password_page.dart';
@@ -15,11 +16,17 @@ import 'package:tccapp/utils/app_theme.dart';
 import 'firebase_options.dart';
 import 'views/forgot_password_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  print(" Mensagem em segundo plano: ${message.messageId}");
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   await initializeDateFormatting('pt_BR', null);
   runApp(const MyApp());
 }
@@ -47,6 +54,25 @@ class MyApp extends StatelessWidget {
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
+  Future<void> _saveFcmToken(String userId) async {
+    try {
+      if (!Platform.isAndroid) {
+        print(' Ignorando FCM em iOS: sem APNs configurado.');
+        return;
+      }
+
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update(
+          {'fcmToken': token},
+        );
+        print("Token FCM salvo em AuthGate: $token");
+      }
+    } catch (e) {
+      print(' Erro ao obter token FCM no AuthGate: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -59,14 +85,13 @@ class AuthGate extends StatelessWidget {
         }
         final user = snap.data;
         if (user == null) return const LoginPage();
+        _saveFcmToken(user.id);
         return RootNavigation(role: user.role);
       },
     );
   }
 }
 
-/// Widget que controla a BottomNavigationBar e alterna as abas.
-/// A guia “Início” exibe uma home diferente conforme o role.
 class RootNavigation extends StatefulWidget {
   final String role;
   const RootNavigation({required this.role, super.key});
@@ -83,7 +108,6 @@ class _RootNavigationState extends State<RootNavigation> {
   @override
   void initState() {
     super.initState();
-    // configura as páginas de “Início” dinâmico e as abas fixas
     _pages = [
       if (widget.role == 'Master')
         MasterHomePage()

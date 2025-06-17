@@ -1,5 +1,5 @@
-// leader_home_page.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tccapp/models/user.dart';
 import '../controllers/event_controller.dart';
 import '../models/event.dart';
@@ -96,8 +96,9 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
       body: StreamBuilder<List<Event>>(
         stream: _eventController.getUserRelatedEventsStream(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           final events = snapshot.data!;
           final selectedEvents =
@@ -180,10 +181,10 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
                                     stream: AuthService().getUsersInGroupStream(
                                       event.groupId,
                                     ),
-
                                     builder: (context, snapshot) {
-                                      if (!snapshot.hasData)
+                                      if (!snapshot.hasData) {
                                         return const Text("Carregando...");
+                                      }
                                       final assignedUsers =
                                           snapshot.data!
                                               .where(
@@ -192,10 +193,11 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
                                               )
                                               .toList();
 
-                                      if (assignedUsers.isEmpty)
+                                      if (assignedUsers.isEmpty) {
                                         return const Text(
                                           "Nenhum voluntário escalado.",
                                         );
+                                      }
 
                                       return Column(
                                         crossAxisAlignment:
@@ -226,45 +228,30 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
                                     },
                                   ),
                                   const SizedBox(height: 8),
-                                  RichText(
-                                    text: TextSpan(
-                                      style: DefaultTextStyle.of(context).style,
-                                      children: [
-                                        const TextSpan(
-                                          text: "Local: ",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        TextSpan(text: event.location),
-                                      ],
-                                    ),
-                                  ),
-                                  RichText(
-                                    text: TextSpan(
-                                      style: DefaultTextStyle.of(context).style,
-                                      children: [
-                                        const TextSpan(
-                                          text: "Horário: ",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        TextSpan(text: event.time),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
                                   TextButton.icon(
                                     icon: const Icon(Icons.group_add),
                                     label: const Text("Definir Escala"),
                                     onPressed: () async {
+                                      // 🔄 Recarrega o evento atualizado do Firestore
+                                      final eventSnap =
+                                          await FirebaseFirestore.instance
+                                              .collection('events')
+                                              .doc(event.id)
+                                              .get();
+                                      final eventData = eventSnap.data();
+                                      if (eventData == null) return;
+
+                                      final updatedAssignedIds =
+                                          List<String>.from(
+                                            eventData['assignedUserIds'] ?? [],
+                                          );
+
                                       final groupVolunteers =
                                           await AuthService().getUsersInGroup(
                                             event.groupId,
                                           );
                                       final selectedIds = [
-                                        ...event.assignedUserIds,
+                                        ...updatedAssignedIds,
                                       ];
 
                                       await showDialog(
@@ -277,40 +264,52 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
                                               content: SizedBox(
                                                 width: double.maxFinite,
                                                 child: StatefulBuilder(
-                                                  builder:
-                                                      (
-                                                        context,
-                                                        setState,
-                                                      ) => ListView(
-                                                        shrinkWrap: true,
-                                                        children:
-                                                            groupVolunteers.map<
-                                                              Widget
-                                                            >((user) {
-                                                              return CheckboxListTile(
-                                                                title: Text(
-                                                                  user.name,
-                                                                ),
-                                                                value: selectedIds
+                                                  builder: (
+                                                    context,
+                                                    setStateDialog,
+                                                  ) {
+                                                    return ListView(
+                                                      shrinkWrap: true,
+                                                      children:
+                                                          groupVolunteers.map((
+                                                            user,
+                                                          ) {
+                                                            final isSelected =
+                                                                selectedIds
                                                                     .contains(
                                                                       user.id,
-                                                                    ),
-                                                                onChanged:
-                                                                    (
-                                                                      checked,
-                                                                    ) => setState(() {
-                                                                      checked ==
-                                                                              true
-                                                                          ? selectedIds.add(
+                                                                    );
+                                                            return CheckboxListTile(
+                                                              title: Text(
+                                                                user.name,
+                                                              ),
+                                                              value: isSelected,
+                                                              onChanged: (
+                                                                checked,
+                                                              ) {
+                                                                setStateDialog(() {
+                                                                  if (checked ==
+                                                                          true &&
+                                                                      !selectedIds
+                                                                          .contains(
                                                                             user.id,
-                                                                          )
-                                                                          : selectedIds.remove(
-                                                                            user.id,
-                                                                          );
-                                                                    }),
-                                                              );
-                                                            }).toList(),
-                                                      ),
+                                                                          )) {
+                                                                    selectedIds
+                                                                        .add(
+                                                                          user.id,
+                                                                        );
+                                                                  } else {
+                                                                    selectedIds
+                                                                        .remove(
+                                                                          user.id,
+                                                                        );
+                                                                  }
+                                                                });
+                                                              },
+                                                            );
+                                                          }).toList(),
+                                                    );
+                                                  },
                                                 ),
                                               ),
                                               actions: [
@@ -329,6 +328,12 @@ class _LeaderHomePageState extends State<LeaderHomePage> {
                                                           selectedIds,
                                                         );
                                                     Navigator.pop(context);
+                                                    setState(() {
+                                                      _selectedDayEvents =
+                                                          []; // força o uso da lista atualizada vinda do StreamBuilder
+                                                      _expandedEventId =
+                                                          event.id!;
+                                                    });
                                                   },
                                                   child: const Text('Salvar'),
                                                 ),

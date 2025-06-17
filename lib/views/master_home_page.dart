@@ -1,4 +1,4 @@
-// master_home_page.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:tccapp/controllers/event_controller.dart';
 import 'package:tccapp/models/event.dart';
@@ -11,7 +11,7 @@ import 'registration_page.dart';
 import 'user_list_page.dart';
 
 class MasterHomePage extends StatefulWidget {
-  MasterHomePage({super.key});
+  const MasterHomePage({super.key});
 
   @override
   State<MasterHomePage> createState() => _MasterHomePageState();
@@ -38,11 +38,14 @@ class _MasterHomePageState extends State<MasterHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Página do Master'),
+        title: const Text('Página do Master'),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService().logout();
+              Navigator.pushReplacementNamed(context, '/login');
+            },
           ),
         ],
       ),
@@ -62,8 +65,8 @@ class _MasterHomePageState extends State<MasterHomePage> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.group_add),
-              title: Text('Cadastrar Grupo'),
+              leading: const Icon(Icons.group_add),
+              title: const Text('Cadastrar Grupo'),
               onTap:
                   () => Navigator.push(
                     context,
@@ -73,26 +76,26 @@ class _MasterHomePageState extends State<MasterHomePage> {
                   ),
             ),
             ListTile(
-              leading: Icon(Icons.group),
-              title: Text('Gerenciar Grupos'),
+              leading: const Icon(Icons.group),
+              title: const Text('Gerenciar Grupos'),
               onTap:
                   () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => GroupListPage()),
+                    MaterialPageRoute(builder: (_) => const GroupListPage()),
                   ),
             ),
             ListTile(
-              leading: Icon(Icons.person_add),
-              title: Text('Cadastrar Voluntário/Líder'),
+              leading: const Icon(Icons.person_add),
+              title: const Text('Cadastrar Voluntário/Líder'),
               onTap:
                   () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => RegistrationPage()),
+                    MaterialPageRoute(builder: (_) => const RegistrationPage()),
                   ),
             ),
             ListTile(
-              leading: Icon(Icons.people),
-              title: Text('Visualizar Usuários'),
+              leading: const Icon(Icons.people),
+              title: const Text('Visualizar Usuários'),
               onTap:
                   () => Navigator.push(
                     context,
@@ -105,10 +108,8 @@ class _MasterHomePageState extends State<MasterHomePage> {
       body: StreamBuilder<List<Event>>(
         stream: _eventController.getAllEvents(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
-          }
-
+          if (!snapshot.hasData)
+            return const Center(child: CircularProgressIndicator());
           final events = snapshot.data!;
           final selectedEvents =
               _selectedDayEvents.isNotEmpty
@@ -118,18 +119,15 @@ class _MasterHomePageState extends State<MasterHomePage> {
                       .toList();
 
           return Padding(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
                 UnifiedCalendar(
                   events: events,
-                  onDaySelected: (day, evts) {
-                    setState(() {
-                      _selectedDayEvents = evts;
-                    });
-                  },
+                  onDaySelected:
+                      (day, evts) => setState(() => _selectedDayEvents = evts),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Expanded(
                   child: ListView.builder(
                     itemCount: selectedEvents.length,
@@ -143,41 +141,47 @@ class _MasterHomePageState extends State<MasterHomePage> {
                       );
 
                       return Card(
-                        margin: EdgeInsets.symmetric(
+                        margin: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
                         child: ExpansionTile(
                           key: ValueKey(event.id),
                           initiallyExpanded: _expandedEventId == event.id,
-                          onExpansionChanged: (expanded) {
-                            setState(() {
-                              _expandedEventId = expanded ? event.id : null;
-                            });
-                          },
+                          onExpansionChanged:
+                              (expanded) => setState(
+                                () =>
+                                    _expandedEventId =
+                                        expanded ? event.id : null,
+                              ),
                           title: Text(event.description),
-                          subtitle: RichText(
-                            text: TextSpan(
-                              style: DefaultTextStyle.of(context).style,
-                              children: [
-                                TextSpan(
-                                  text: "Confirmados: ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                TextSpan(
-                                  text: "${event.confirmedUserIds.length}",
-                                ),
-                              ],
-                            ),
-                          ),
                           children: [
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox(height: 16),
-                                  Text(
+                                  RichText(
+                                    text: TextSpan(
+                                      style: DefaultTextStyle.of(context).style,
+                                      children: [
+                                        const TextSpan(
+                                          text: "Confirmados: ",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text:
+                                              "${event.confirmedUserIds.length}",
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
                                     'Voluntários escalados:',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
@@ -187,10 +191,10 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                     stream: AuthService().getUsersInGroupStream(
                                       event.groupId,
                                     ),
-
                                     builder: (context, snapshot) {
-                                      if (!snapshot.hasData)
-                                        return Text("Carregando...");
+                                      if (!snapshot.hasData) {
+                                        return const Text("Carregando...");
+                                      }
                                       final assignedUsers =
                                           snapshot.data!
                                               .where(
@@ -199,10 +203,11 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                               )
                                               .toList();
 
-                                      if (assignedUsers.isEmpty)
-                                        return Text(
+                                      if (assignedUsers.isEmpty) {
+                                        return const Text(
                                           "Nenhum voluntário escalado.",
                                         );
+                                      }
 
                                       return Column(
                                         crossAxisAlignment:
@@ -224,7 +229,7 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                                             : Colors.red,
                                                     size: 18,
                                                   ),
-                                                  SizedBox(width: 8),
+                                                  const SizedBox(width: 8),
                                                   Text(user.name),
                                                 ],
                                               );
@@ -232,97 +237,89 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                       );
                                     },
                                   ),
-                                  SizedBox(height: 8),
-                                  RichText(
-                                    text: TextSpan(
-                                      style: DefaultTextStyle.of(context).style,
-                                      children: [
-                                        TextSpan(
-                                          text: "Local: ",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        TextSpan(text: event.location),
-                                      ],
-                                    ),
-                                  ),
-                                  RichText(
-                                    text: TextSpan(
-                                      style: DefaultTextStyle.of(context).style,
-                                      children: [
-                                        TextSpan(
-                                          text: "Horário: ",
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        TextSpan(text: event.time),
-                                      ],
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   TextButton.icon(
-                                    icon: Icon(Icons.group_add),
-                                    label: Text("Definir Escala"),
+                                    icon: const Icon(Icons.group_add),
+                                    label: const Text("Definir Escala"),
                                     onPressed: () async {
+                                      //  Recarrega o evento atualizado do Firestore
+                                      final eventSnap =
+                                          await FirebaseFirestore.instance
+                                              .collection('events')
+                                              .doc(event.id)
+                                              .get();
+                                      final eventData = eventSnap.data();
+                                      if (eventData == null) return;
+
+                                      final updatedAssignedIds =
+                                          List<String>.from(
+                                            eventData['assignedUserIds'] ?? [],
+                                          );
+
                                       final groupVolunteers =
                                           await AuthService().getUsersInGroup(
                                             event.groupId,
                                           );
                                       final selectedIds = [
-                                        ...event.assignedUserIds,
+                                        ...updatedAssignedIds,
                                       ];
 
                                       await showDialog(
                                         context: context,
                                         builder:
                                             (context) => AlertDialog(
-                                              title: Text(
+                                              title: const Text(
                                                 'Escalar voluntários',
                                               ),
                                               content: SizedBox(
                                                 width: double.maxFinite,
                                                 child: StatefulBuilder(
-                                                  builder:
-                                                      (
-                                                        context,
-                                                        setState,
-                                                      ) => ListView(
-                                                        shrinkWrap: true,
-                                                        children:
-                                                            groupVolunteers.map((
-                                                              user,
-                                                            ) {
-                                                              return CheckboxListTile(
-                                                                title: Text(
-                                                                  user.name,
-                                                                ),
-                                                                value: selectedIds
+                                                  builder: (
+                                                    context,
+                                                    setStateDialog,
+                                                  ) {
+                                                    return ListView(
+                                                      shrinkWrap: true,
+                                                      children:
+                                                          groupVolunteers.map((
+                                                            user,
+                                                          ) {
+                                                            final isSelected =
+                                                                selectedIds
                                                                     .contains(
                                                                       user.id,
-                                                                    ),
-                                                                onChanged: (
-                                                                  checked,
-                                                                ) {
-                                                                  setState(() {
-                                                                    if (checked ==
-                                                                        true) {
-                                                                      selectedIds
-                                                                          .add(
+                                                                    );
+                                                            return CheckboxListTile(
+                                                              title: Text(
+                                                                user.name,
+                                                              ),
+                                                              value: isSelected,
+                                                              onChanged: (
+                                                                checked,
+                                                              ) {
+                                                                setStateDialog(() {
+                                                                  if (checked ==
+                                                                          true &&
+                                                                      !selectedIds
+                                                                          .contains(
                                                                             user.id,
-                                                                          );
-                                                                    } else {
-                                                                      selectedIds
-                                                                          .remove(
-                                                                            user.id,
-                                                                          );
-                                                                    }
-                                                                  });
-                                                                },
-                                                              );
-                                                            }).toList(),
-                                                      ),
+                                                                          )) {
+                                                                    selectedIds
+                                                                        .add(
+                                                                          user.id,
+                                                                        );
+                                                                  } else {
+                                                                    selectedIds
+                                                                        .remove(
+                                                                          user.id,
+                                                                        );
+                                                                  }
+                                                                });
+                                                              },
+                                                            );
+                                                          }).toList(),
+                                                    );
+                                                  },
                                                 ),
                                               ),
                                               actions: [
@@ -331,7 +328,7 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                                       () => Navigator.pop(
                                                         context,
                                                       ),
-                                                  child: Text('Cancelar'),
+                                                  child: const Text('Cancelar'),
                                                 ),
                                                 TextButton(
                                                   onPressed: () async {
@@ -341,15 +338,21 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                                           selectedIds,
                                                         );
                                                     Navigator.pop(context);
+                                                    setState(() {
+                                                      _selectedDayEvents =
+                                                          []; // força o uso da lista atualizada vinda do StreamBuilder
+                                                      _expandedEventId =
+                                                          event.id!;
+                                                    });
                                                   },
-                                                  child: Text('Salvar'),
+                                                  child: const Text('Salvar'),
                                                 ),
                                               ],
                                             ),
                                       );
                                     },
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   isAssigned
                                       ? TextButton.icon(
                                         onPressed: () async {
@@ -380,7 +383,7 @@ class _MasterHomePageState extends State<MasterHomePage> {
                                           ),
                                         ),
                                       )
-                                      : Padding(
+                                      : const Padding(
                                         padding: EdgeInsets.symmetric(
                                           vertical: 8.0,
                                         ),
@@ -407,6 +410,5 @@ class _MasterHomePageState extends State<MasterHomePage> {
   }
 }
 
-bool isSameDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}
+bool isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;

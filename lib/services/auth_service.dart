@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user.dart';
 import '../utils/firebase_error_utils.dart';
 
@@ -10,6 +12,25 @@ class AuthService {
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
     region: 'us-central1',
   );
+
+  Future<void> _saveFcmTokenToFirestore(String userId) async {
+    try {
+      if (!Platform.isAndroid) {
+        print('📱 Ignorando FCM: plataforma iOS sem APNs configurado.');
+        return;
+      }
+
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _firestore.collection('users').doc(userId).update({
+          'fcmToken': token,
+        });
+        print('Token FCM salvo com sucesso: $token');
+      }
+    } catch (e) {
+      print('Erro ao salvar token FCM: $e');
+    }
+  }
 
   Future<User?> _userFromFirebase(firebase_auth.User? user) async {
     if (user == null) return null;
@@ -22,90 +43,6 @@ class AuthService {
     return user != null ? await _userFromFirebase(user) : null;
   }
 
-  /// Atualiza os campos de perfil do usuário logado.
-  Future<void> updateProfile({
-    required String name,
-    String? phone,
-    String? occupation,
-    String? description,
-  }) async {
-    final current = _auth.currentUser;
-    if (current == null) {
-      throw 'Usuário não autenticado.';
-    }
-    await _firestore.collection('users').doc(current.uid).update({
-      'name': name,
-      'phone': phone,
-      'occupation': occupation,
-      'description': description,
-    });
-  }
-
-  Future<String> deleteUserAccount({
-    required String targetUserId,
-    String? currentUserPassword,
-    required bool isLeader,
-  }) async {
-    try {
-      final currentUser = _auth.currentUser;
-      // Carrega dados do alvo para validar permissão
-      final targetDoc =
-          await _firestore.collection('users').doc(targetUserId).get();
-      if (!targetDoc.exists) throw 'Usuário não encontrado.';
-      final targetRole = targetDoc.data()?['role'] as String?;
-
-      // Impede que qualquer um, exceto o próprio master, exclua o master
-      if (targetRole == 'Master') {
-        if (currentUser == null || currentUser.uid != targetUserId) {
-          throw 'Você não tem permissão para excluir o Master.';
-        }
-      }
-
-      // Exclusão de conta própria
-      if (currentUser != null && currentUser.uid == targetUserId) {
-        // Exclui dados do Firestore
-        await _firestore.collection('users').doc(targetUserId).delete();
-
-        // Reautentica e exclui no Auth
-        if (currentUserPassword == null) {
-          throw 'Para excluir sua própria conta, forneça sua senha.';
-        }
-        final credential = firebase_auth.EmailAuthProvider.credential(
-          email: currentUser.email!,
-          password: currentUserPassword,
-        );
-        await currentUser.reauthenticateWithCredential(credential);
-        await currentUser.delete();
-        return 'Conta excluída com sucesso!';
-      }
-
-      // Exclusão por líder (exceto master já tratado acima)
-      if (isLeader) {
-        final callable = _functions.httpsCallable('adminDeleteUser');
-        final result = await callable.call({'userId': targetUserId});
-        return result.data['message'] as String;
-      }
-
-      // Demais casos sem permissão
-      throw 'Apenas líderes podem excluir outros usuários.';
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleAuthError(e);
-    } catch (e) {
-      throw 'Erro ao excluir usuário: $e';
-    }
-  }
-
-  String _handleAuthError(firebase_auth.FirebaseAuthException e) {
-    switch (e.code) {
-      case 'requires-recent-login':
-        return 'Reautenticação necessária. Por favor, faça login novamente.';
-      case 'permission-denied':
-        return 'Permissões insuficientes.';
-      default:
-        return 'Erro de autenticação: ${e.message}';
-    }
-  }
-
   Stream<User?> get user =>
       _auth.authStateChanges().asyncMap(_userFromFirebase);
 
@@ -115,7 +52,11 @@ class AuthService {
         email: email,
         password: password,
       );
-      return await _userFromFirebase(uc.user);
+      final user = await _userFromFirebase(uc.user);
+      if (user != null) {
+        await _saveFcmTokenToFirestore(user.id);
+      }
+      return user;
     } on firebase_auth.FirebaseAuthException catch (e) {
       final msg = FirebaseErrorTranslator.translate(e.code);
       throw 'Erro ao fazer login: $msg';
@@ -184,6 +125,8 @@ class AuthService {
       });
       await batch.commit();
 
+      await _saveFcmTokenToFirestore(newUserId);
+
       final newUserDoc =
           await _firestore.collection('users').doc(newUserId).get();
       return newUserDoc.exists ? User.fromMap(newUserDoc.data()!) : null;
@@ -205,7 +148,7 @@ class AuthService {
       try {
         return snap.docs.map((doc) => User.fromMap(doc.data())).toList();
       } catch (e) {
-        print('❌ Erro ao processar usuários do snapshot: $e');
+        print(' Erro ao processar usuários do snapshot: $e');
         return [];
       }
     });
@@ -221,7 +164,7 @@ class AuthService {
 
       return snapshot.docs.map((doc) => User.fromMap(doc.data())).toList();
     } catch (e) {
-      print('❌ Erro ao buscar voluntários: $e');
+      print(' Erro ao buscar voluntários: $e');
       return [];
     }
   }
@@ -236,7 +179,6 @@ class AuthService {
     }
   }
 
-  //ajuste de alteração de senha
   Future<void> changePassword(String newPassword) async {
     final user = _auth.currentUser;
     if (user != null) {
@@ -269,4 +211,30 @@ class AuthService {
           (snap) => snap.docs.map((doc) => User.fromMap(doc.data())).toList(),
         );
   }
+
+  Future<void> updateProfile({
+    required String name,
+    String? phone,
+    String? occupation,
+    String? description,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Usuário não autenticado');
+
+    final uid = user.uid;
+    final data = {
+      'name': name,
+      'phone': phone,
+      'occupation': occupation,
+      'description': description,
+    };
+
+    await _firestore.collection('users').doc(uid).update(data);
+  }
+
+  deleteUserAccount({
+    required String targetUserId,
+    required String currentUserPassword,
+    required bool isLeader,
+  }) {}
 }

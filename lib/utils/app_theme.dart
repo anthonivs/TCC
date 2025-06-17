@@ -1,4 +1,3 @@
-// lib/utils/app_theme.dart
 import 'package:flutter/material.dart';
 
 /// Define o tema principal do app

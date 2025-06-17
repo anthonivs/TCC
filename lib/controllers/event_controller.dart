@@ -85,9 +85,69 @@ class EventController {
     List<String> userIds,
   ) async {
     try {
-      await _firestore.collection('events').doc(eventId).update({
+      final eventRef = _firestore.collection('events').doc(eventId);
+      final currentSnap = await eventRef.get();
+      final currentData = currentSnap.data();
+      if (currentData == null) return;
+
+      final List<String> currentAssigned = List<String>.from(
+        currentData['assignedUserIds'] ?? [],
+      );
+      final List<String> currentConfirmed = List<String>.from(
+        currentData['confirmedUserIds'] ?? [],
+      );
+
+      final List<String> removedUsers =
+          currentAssigned.where((id) => !userIds.contains(id)).toList();
+      final List<String> updatedConfirmed =
+          currentConfirmed.where((id) => !removedUsers.contains(id)).toList();
+
+      await eventRef.update({
         'assignedUserIds': userIds,
+        'confirmedUserIds': updatedConfirmed,
       });
+
+      final eventSnap = await eventRef.get();
+      if (!eventSnap.exists) return;
+
+      final eventData = eventSnap.data()!;
+      final description = eventData['description'] ?? 'um evento';
+      final time = eventData['time'] ?? '';
+      final location = eventData['location'] ?? '';
+
+      final sanitizedUserIds =
+          userIds.where((id) => id.trim().isNotEmpty).toList();
+      if (sanitizedUserIds.isEmpty) return;
+
+      final usersSnap =
+          await _firestore
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: sanitizedUserIds)
+              .get();
+
+      final tokens =
+          usersSnap.docs
+              .map((doc) => doc.data()['fcmToken'])
+              .whereType<String>()
+              .toList();
+
+      // TODO: Remover após testes
+      print(' DEBUG: Usuários escalados: $sanitizedUserIds');
+      print(' DEBUG: Tokens encontrados: $tokens');
+
+      if (tokens.isNotEmpty) {
+        final callable = FirebaseFunctions.instance.httpsCallable(
+          'sendGroupNotification',
+        );
+        final response = await callable.call({
+          'tokens': tokens,
+          'title': '👥 Você foi escalado!',
+          'body': 'Você foi escalado para: $description às $time em $location.',
+        });
+
+        // TODO: Remover após testes
+        print(' DEBUG: Notificação enviada. Resposta: ${response.data}');
+      }
     } catch (e) {
       throw 'Erro ao escalar voluntários: $e';
     }

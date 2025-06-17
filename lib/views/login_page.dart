@@ -25,7 +25,7 @@ class LoginPageState extends State<LoginPage> {
       final user = await AuthService().login(email, password);
 
       // debug: veja no console qual role chegou
-      debugPrint('📋 [LoginPage] user.role = ${user?.role}');
+      debugPrint(' [LoginPage] user.role = ${user?.role}');
 
       if (!mounted) return;
       if (user != null) {

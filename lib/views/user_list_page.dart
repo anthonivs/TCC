@@ -128,6 +128,7 @@ class UserListPage extends StatelessWidget {
         message = await _authService.deleteUserAccount(
           targetUserId: user.id,
           isLeader: canDelete,
+          currentUserPassword: '',
         );
       }
 

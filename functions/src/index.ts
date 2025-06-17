@@ -49,7 +49,7 @@ export const adminDeleteUser = https.onCall(
     }
     const targetRole = targetSnap.data()!.role as string;
 
-    // 5️⃣ Regras: Master pode tudo; Líder só voluntário
+    // Regras: Master pode tudo; Líder só voluntário
     const isMaster = requesterRole === "Master";
     const isLeaderDeletingVolunteer = requesterRole === "Líder" && targetRole === "Voluntário";
     if (!(isMaster || isLeaderDeletingVolunteer)) {
@@ -59,7 +59,7 @@ export const adminDeleteUser = https.onCall(
       );
     }
 
-    // 6️⃣ Executa exclusão
+    // Executa exclusão
     try {
       await admin.auth().deleteUser(targetUid);
       await admin.firestore().collection("users").doc(targetUid).delete();
@@ -88,9 +88,17 @@ export const sendGroupNotification = https.onCall(
     }
 
     const message = {
-      notification: { title, body },
       tokens,
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+
+      },
     };
+
 
     try {
       const response = await admin.messaging().sendEachForMulticast(message);
@@ -108,7 +116,7 @@ export const sendGroupNotification = https.onCall(
 );
 
 /**
- * ⏰ Função agendada — Envia lembretes para eventos em 1 dia ou 3 horas
+ *  Função agendada — Envia lembretes para eventos em 1 dia ou 3 horas
  */
 export const checkUpcomingEvents = onSchedule(
   { schedule: "every 60 minutes", timeZone: "America/Sao_Paulo" },
