@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/group.dart';
 
 class GroupService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  GroupService({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Adiciona um novo grupo
   Future<void> addGroup(Group group) async {

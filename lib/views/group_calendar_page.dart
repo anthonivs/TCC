@@ -133,6 +133,7 @@ class GroupCalendarPageState extends State<GroupCalendarPage> {
                         location: newLocation,
                         time: selectedTime!.format(context),
                         groupId: widget.group.id,
+                        title: '',
                       );
 
                       try {
