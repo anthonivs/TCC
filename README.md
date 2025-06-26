@@ -78,19 +78,92 @@ Durante a gestão de voluntários em eventos comunitários, observou-se dificuld
 
 ---
 
-##  Diagramas
+## Diagramas
 
-###  Diagrama de Containers
+### Diagrama de Containers
 
-![Diagrama de Containers](diagrama_containers.png)
+```mermaid
+flowchart TD
+    subgraph Dispositivos dos Usuários
+        A[Usuário Líder] -->|HTTPS| App["Aplicativo Flutter Android/iOS"]
+        B[Usuário Voluntário] -->|HTTPS| App
+        C[Usuário Master/Admin] -->|HTTPS| App
+    end
+
+    subgraph Aplicativo de Gestão de Voluntários
+        App -->|HTTPS| Auth["Firebase Authentication"]
+        App -->|HTTPS| Firestore["Firebase Firestore"]
+        App -->|HTTPS| Functions["Firebase Functions"]
+        App -->|HTTPS| Messaging["Firebase Messaging FCM"]
+    end
+
+    subgraph Firebase Backend
+        Auth -->|Autentica| Firestore
+        Functions -->|Executa Ações em| Firestore
+        Messaging -->|Envia Notificações para| App
+    end
+```
 
 ---
 
-###  Diagrama de Classes
+### Diagrama de Classes
 
-![Diagrama de Classes](diagrama_classes.png)
+```mermaid
+classDiagram
+  class User {
+    +String id
+    +String name
+    +String email
+    +String role
+    +List~String~ groupIds
+    +String phone
+    +String occupation
+    +String description
+  }
 
----
+  class Group {
+    +String id
+    +String name
+    +String leaderId
+    +List~String~ userIds
+    +List~String~ volunteers
+  }
+
+  class Event {
+    +String id
+    +String groupId
+    +String title
+    +DateTime date
+    +String description
+    +List~String~ confirmedUserIds
+  }
+
+  class AuthService {
+    +signIn(email, password)
+    +signOut()
+    +register(user, password)
+  }
+
+  class EventController {
+    +createEvent(event)
+    +deleteEvent(eventId)
+    +confirmAttendance(eventId, userId)
+  }
+
+  class GroupController {
+    +createGroup(group)
+    +deleteGroup(groupId)
+    +addVolunteer(groupId, userId)
+    +removeVolunteer(groupId, userId)
+  }
+
+  User --> Group : Participa
+  Group --> Event : Possui
+  AuthService --> User : Autentica
+  EventController --> Event : Gerencia
+  GroupController --> Group : Gerencia
+```
+
 
 ##  Requisitos de Software
 
