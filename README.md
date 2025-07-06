@@ -35,7 +35,7 @@ O projeto consiste no desenvolvimento de um aplicativo móvel para gestão de eq
 - Experiência distinta por tipo de usuário: Líder, Voluntário e Master.
 
 ### Protótipos
-> (Adicione o link do Figma aqui, se disponível.)
+> 
 
 ---
 
