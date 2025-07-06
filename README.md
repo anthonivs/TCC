@@ -169,9 +169,9 @@ classDiagram
 
 ### Funcionais 
 - Cadastro e autenticação de usuários (líderes e voluntários).
-- Criação e gerenciamento de grupos de voluntários (apenas líderes).
-- Adição e remoção de voluntários em grupos (apenas líderes).
-- Criação, edição e exclusão de eventos no calendário da equipe (apenas líderes).
+- Criação e gerenciamento de grupos de voluntários (apenas líderes/master).
+- Adição e remoção de voluntários em grupos (apenas líderes/master).
+- Criação, edição e exclusão de eventos no calendário da equipe (apenas líderes/master).
 - Visualização do calendário da equipe por voluntários.
 - Notificações push para avisos sobre eventos e atualizações no calendário.
 - Perfil de usuário com informações básicas e histórico de participação.
