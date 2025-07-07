@@ -209,8 +209,8 @@ classDiagram
 ##  Testes
 
 - Testes unitários com `flutter_test`
-- Planejamento de testes de integração para validação de lógica de eventos e permissões por função
-- Simulação de notificações via Firebase Emulator Suite (em fase de testes)
+- Planejamento de testes de integração para validação de lógica de eventos e permissões por função.
+- Simulação de notificações via Firebase. (em fase de testes)
 
 ---
 
