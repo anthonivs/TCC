@@ -214,6 +214,20 @@ classDiagram
 
 ---
 
+## Demonstração do Aplicativo
+
+Abaixo, vídeos curtos demonstrando as funcionalidades principais de cada perfil de usuário:
+
+### Voluntário
+<video src="https://github.com/user-attachments/assets/09bec025-b16c-4b81-9bb4-279475adb2bd.mp4" controls width="100%"></video>
+
+### Líder
+<video src="https://github.com/user-attachments/assets/3a45859b-6c6a-4854-ad40-9949f3b82f29.mp4" controls width="100%"></video>
+
+### Master
+<video src="https://github.com/user-attachments/assets/3fd776c1-6d5e-400b-8b93-fd41325c42c4.mp4" controls width="100%"></video>
+
+---
 ##  Repositório
 
 [🔗 GitHub - anthonivs/TCC](https://github.com/anthonivs/TCC)
