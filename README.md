@@ -59,7 +59,7 @@ O projeto consiste no desenvolvimento de um aplicativo móvel para gestão de eq
 
 - Organização em `models/`, `controllers/`, `views/`, `services/` e `widgets/`
 - Boas práticas com `flutter_lints`
-- Testes com `flutter_test` (em andamento)
+- Testes com `flutter_test` 
 - Uso de `logger` para rastreabilidade de erros
 
 ---
@@ -173,7 +173,7 @@ classDiagram
 |--------|-----------|
 | **RF01** | O sistema deve permitir o cadastro de usuários com os papéis de Líder e Voluntário. |
 | **RF02** | O sistema deve permitir a autenticação dos usuários por e-mail e senha. |
-| **RF03** | O sistema deve permitir que o Master crie e gerenciem grupos de voluntários. |
+| **RF03** | O sistema deve permitir que o Master crie e gerencie grupos de voluntários. |
 | **RF04** | O sistema deve permitir que Líderes e Masters adicionem ou removam voluntários dos grupos. |
 | **RF05** | O sistema deve permitir que Líderes e Masters criem, editem e excluam eventos nos calendários dos seus grupos. |
 | **RF06** | O sistema deve permitir que Voluntários visualizem os eventos dos grupos aos quais estão associados. |
@@ -218,7 +218,7 @@ classDiagram
 
 - Testes unitários com `flutter_test`
 - Planejamento de testes de integração para validação de lógica de eventos e permissões por função.
-- Simulação de notificações via Firebase. (em fase de testes)
+- Simulação de notificações via Firebase. 
 
 ---
 
