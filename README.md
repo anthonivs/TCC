@@ -84,24 +84,33 @@ Durante a gestão de voluntários em eventos comunitários, observou-se dificuld
 
 ```mermaid
 flowchart TD
-    subgraph Dispositivos dos Usuários
-        A[Usuário Líder] -->|HTTPS| App["Aplicativo Flutter Android/iOS"]
-        B[Usuário Voluntário] -->|HTTPS| App
-        C[Usuário Master/Admin] -->|HTTPS| App
+    subgraph "Dispositivos dos Usuários"
+        Lider[Usuário Líder]
+        Voluntario[Usuário Voluntário]
+        Master[Usuário Master/Admin]
+
+        Lider -->|HTTPS| App["Aplicativo Flutter (Android/iOS)"]
+        Voluntario -->|HTTPS| App
+        Master -->|HTTPS| App
     end
 
-    subgraph Aplicativo de Gestão de Voluntários
-        App -->|HTTPS| Auth["Firebase Authentication"]
-        App -->|HTTPS| Firestore["Firebase Firestore"]
-        App -->|HTTPS| Functions["Firebase Functions"]
-        App -->|HTTPS| Messaging["Firebase Messaging FCM"]
+    subgraph "Firebase Backend"
+        Auth["Firebase Authentication"]
+        Store["Firebase Firestore"]
+        Func["Firebase Functions"]
+        Msg["Firebase Messaging (FCM)"]
+
+        Auth -->|Autentica| Store
+        Func -->|Executa ações em| Store
+        Msg -->|Envia notificações para| App
     end
 
-    subgraph Firebase Backend
-        Auth -->|Autentica| Firestore
-        Functions -->|Executa Ações em| Firestore
-        Messaging -->|Envia Notificações para| App
-    end
+    App -->|HTTPS| Auth
+    App -->|HTTPS| Store
+    App -->|HTTPS| Func
+    App -->|HTTPS| Msg
+
+
 ```
 
 ---
