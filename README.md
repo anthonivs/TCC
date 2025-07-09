@@ -167,22 +167,30 @@ classDiagram
 
 ##  Requisitos de Software
 
-### Funcionais 
-- Cadastro e autenticação de usuários (líderes e voluntários).
-- Criação e gerenciamento de grupos de voluntários (apenas líderes/master).
-- Adição e remoção de voluntários em grupos (apenas líderes/master).
-- Criação, edição e exclusão de eventos no calendário da equipe (apenas líderes/master).
-- Visualização do calendário da equipe por voluntários.
-- Notificações push para avisos sobre eventos e atualizações no calendário.
-- Perfil de usuário com informações básicas e histórico de participação.
+### Requisitos Funcionais
 
-### Não Funcionais 
-- O aplicativo deve ser desenvolvido para iOS e Android.
-- O tempo de carregamento das páginas deve ser inferior a 3 segundos.
-- O banco de dados deve ser seguro e escalável.
-- O código deve seguir as boas práticas de desenvolvimento (clean code).
-- O aplicativo deve funcionar offline para visualização do calendário (com sincronização ao reconectar).
+| Código | Descrição |
+|--------|-----------|
+| **RF01** | O sistema deve permitir o cadastro de usuários com os papéis de Líder e Voluntário. |
+| **RF02** | O sistema deve permitir a autenticação dos usuários por e-mail e senha. |
+| **RF03** | O sistema deve permitir que o Master crie e gerenciem grupos de voluntários. |
+| **RF04** | O sistema deve permitir que Líderes e Masters adicionem ou removam voluntários dos grupos. |
+| **RF05** | O sistema deve permitir que Líderes e Masters criem, editem e excluam eventos nos calendários dos seus grupos. |
+| **RF06** | O sistema deve permitir que Voluntários visualizem os eventos dos grupos aos quais estão associados. |
+| **RF07** | O sistema deve permitir que Voluntários confirmem presença em eventos. |
+| **RF08** | O sistema deve enviar notificações push aos usuários sobre criação, alterações e lembretes de eventos. |
+| **RF09** | O sistema deve manter um perfil para cada usuário com dados como nome, e-mail, ocupação e histórico de participação. |
 
+### Requisitos Não Funcionais
+
+| Código | Descrição |
+|--------|-----------|
+| **RNF01** | O aplicativo deve ser compatível com dispositivos iOS e Android. |
+| **RNF02** | O tempo de carregamento das telas deve ser inferior a 3 segundos em redes estáveis. |
+| **RNF03** | O banco de dados deve oferecer segurança, consistência e escalabilidade. |
+| **RNF04** | O aplicativo deve seguir boas práticas de desenvolvimento, como clean code e uso de linter (`flutter_lints`). |
+| **RNF05** | O sistema deve permitir acesso offline ao calendário (com dados sincronizados localmente). |
+| **RNF06** | O sistema deve utilizar logs para rastreabilidade de erros e falhas durante o uso. |
 
 ---
 
