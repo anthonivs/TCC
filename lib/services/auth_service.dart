@@ -174,7 +174,7 @@ class AuthService {
       final snapshot = await _firestore.collection('users').get();
       return snapshot.docs.map((doc) => User.fromMap(doc.data())).toList();
     } catch (e) {
-      print('❌ Erro ao buscar todos os usuários: $e');
+      print(' Erro ao buscar todos os usuários: $e');
       return [];
     }
   }
@@ -425,7 +425,7 @@ class AuthService {
       final snapshot = await _firestore.collection('users').get();
       return snapshot.docs.map((doc) => User.fromMap(doc.data())).toList();
     } catch (e) {
-      print('❌ Erro ao buscar todos os usuários: $e');
+      print(' Erro ao buscar todos os usuários: $e');
       return [];
     }
   }

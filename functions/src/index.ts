@@ -14,13 +14,13 @@ admin.initializeApp();
 export const adminDeleteUser = https.onCall(
   { region: "us-central1" },
   async (request) => {
-    // 1️⃣ Checa autenticação
+    //  Checa autenticação
     const auth = request.auth;
     if (!auth) {
       throw new https.HttpsError("unauthenticated", "Usuário não autenticado.");
     }
 
-    // 2️⃣ Quem solicitou
+    // 2 Quem solicitou
     const requesterUid = auth.uid;
     const requesterSnap = await admin
       .firestore()
@@ -32,13 +32,13 @@ export const adminDeleteUser = https.onCall(
     }
     const requesterRole = requesterSnap.data()!.role as string;
 
-    // 3️⃣ ID do alvo
+    //  ID do alvo
     const targetUid = (request.data as { userId?: string }).userId;
     if (!targetUid) {
       throw new https.HttpsError("invalid-argument", "ID do usuário não informado.");
     }
 
-    // 4️⃣ Papel do alvo
+    //  Papel do alvo
     const targetSnap = await admin
       .firestore()
       .collection("users")
@@ -138,10 +138,10 @@ export const checkUpcomingEvents = onSchedule(
       const diffMs = (target: Date) => Math.abs(eventTime.getTime() - target.getTime());
 
       if (diffMs(oneDayLater) <= 15 * 60 * 1000) {
-        title = "📅 Lembrete: Evento em 1 dia";
+        title = " Lembrete: Evento em 1 dia";
         shouldNotify = true;
       } else if (diffMs(threeHoursLater) <= 15 * 60 * 1000) {
-        title = "⏰ Faltam 3 horas para o evento!";
+        title = " Faltam 3 horas para o evento!";
         shouldNotify = true;
       }
 
@@ -161,7 +161,7 @@ export const checkUpcomingEvents = onSchedule(
               body: `Evento: ${event.description} às ${event.time} em ${event.location}`,
             },
           });
-          logger.info(`🔔 Lembrete enviado para '${event.description}' (${title})`);
+          logger.info(` Lembrete enviado para '${event.description}' (${title})`);
         }
       }
     }

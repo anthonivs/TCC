@@ -20,6 +20,7 @@ dependencies:
   intl: ^0.20.2
   cupertino_icons: ^1.0.8
   cloud_functions: ^5.4.0
+  firebase_crashlytics: ^4.3.7
 
 dev_dependencies:
   flutter_test:
